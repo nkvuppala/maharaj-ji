@@ -156,33 +156,33 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-48 pt-4 sm:px-6 sm:pt-8 sm:pb-52">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-36 pt-4 sm:px-6 sm:pt-6 sm:pb-40">
       {messages.length === 0 && !typing && (
-        <section className="rise-in flex flex-col items-center py-6 text-center sm:py-10">
+        <section className="rise-in flex flex-col items-center py-3 text-center sm:py-6">
           {/* Diya */}
-          <div className="halo mb-5 flex h-20 w-20 items-center justify-center rounded-full text-primary">
-            <DiyaIcon className="h-14 w-14" />
+          <div className="halo mb-3 flex h-16 w-16 items-center justify-center rounded-full text-primary sm:h-20 sm:w-20">
+            <DiyaIcon className="h-10 w-10 sm:h-14 sm:w-14" />
           </div>
 
-          <h2 className="max-w-xl font-display text-2xl font-semibold leading-relaxed text-foreground-deep sm:text-4xl">
+          <h2 className="max-w-xl font-display text-xl font-semibold leading-relaxed text-foreground-deep sm:text-3xl">
             Radhe Radhe, my child.
           </h2>
-          <p className="mt-2 max-w-md text-base text-muted-foreground sm:text-lg">
+          <p className="mt-1 max-w-md text-sm text-muted-foreground sm:text-base">
             What weighs on your heart today?
           </p>
 
           {/* Parchment suggestion scrolls - perfectly aligned grid */}
-          <div className="mt-8 grid w-full grid-cols-1 gap-3.5 sm:grid-cols-2 items-stretch">
+          <div className="mt-4 grid w-full grid-cols-1 gap-2.5 sm:mt-6 sm:grid-cols-2 items-stretch">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s.text}
                 onClick={() => onSuggestion(s.text)}
-                className="parchment-scroll group flex h-full items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                className="parchment-scroll group flex h-full items-center gap-3 rounded-2xl p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-4"
               >
                 <span className="shrink-0 text-terracotta transition-colors group-hover:text-primary">
                   {SUGGESTION_ICONS[s.icon] ?? <LotusIcon className="h-5 w-5" />}
                 </span>
-                <span className="text-sm font-medium leading-relaxed text-foreground sm:text-[0.95rem]">{s.text}</span>
+                <span className="text-sm font-medium leading-snug text-foreground sm:text-[0.95rem]">{s.text}</span>
               </button>
             ))}
           </div>

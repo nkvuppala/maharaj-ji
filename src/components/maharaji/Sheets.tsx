@@ -274,9 +274,31 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
   );
 }
 
-// Sacred Japa chanting patterns (English, phonetic, & Devanagari)
-const JAPA_PATTERN =
-  /\b(ram|rama|raam|sita|seeta|sitaram|siya|om|aum|shiva|shiv|shivaya|shivam|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|jai|जय|राम|सिया|सीता|सीताराम|शिव|कृष्ण|राधे|हरि|हनुमान|ॐ)\b/gi;
+/**
+ * Sacred Japa chanting patterns — two separate regexes for reliable matching:
+ * - Latin/Romanized: uses \b word boundaries (safe for ASCII)
+ * - Devanagari: uses lookahead/lookbehind-free position matching (since \b fails on Unicode)
+ */
+const JAPA_LATIN =
+  /\b(ram|rama|raam|sita|seeta|sitaram|sita\s*ram|siya\s*ram|siyaram|om|aum|shiva|shiv|shivaya|shivam|om\s*namah\s*shivaya|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|jai|jay|sri|shri|narayana|narayan|lakshmi|durga|ganesh|ganesha|mahadev|prabhu|bhagwan|sai)\b/gi;
+
+const JAPA_DEVANAGARI =
+  /(जय|राम|राम\s*राम|सिया|सीता|सीताराम|शिव|ॐ|ओम|कृष्ण|राधे|राधा|हरि|हनुमान|बजरंग|बाबा|श्री|नारायण|लक्ष्मी|दुर्गा|गणेश|महादेव|प्रभु|भगवान|साई)/gi;
+
+function countMantraMatches(text: string): { count: number; lastMatch: string | null } {
+  const t = text.toLowerCase().trim();
+  if (!t) return { count: 0, lastMatch: null };
+
+  const latinMatches = t.match(JAPA_LATIN) || [];
+  const devaMatches = text.match(JAPA_DEVANAGARI) || [];
+
+  // Use whichever found more matches (avoids double-counting mixed scripts)
+  const matches = latinMatches.length >= devaMatches.length ? latinMatches : devaMatches;
+  return {
+    count: matches.length,
+    lastMatch: matches.length > 0 ? matches[matches.length - 1] : null,
+  };
+}
 
 export function JapaModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [count, setCount] = useState(0);
@@ -284,12 +306,15 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [lastMantra, setLastMantra] = useState<string | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [debugTranscript, setDebugTranscript] = useState<string>("");
 
   const complete = count >= 108;
   const countRef = useRef<number>(0);
   const voiceActiveRef = useRef<boolean>(false);
   const recognitionRef = useRef<any>(null);
-  const processedIndexRef = useRef<number>(0);
+  // Track cumulative counts from finalized results to avoid double-counting
+  const cumulativeCountRef = useRef<number>(0);
+  const restartAttemptsRef = useRef<number>(0);
 
   useEffect(() => {
     countRef.current = count;
@@ -314,6 +339,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       recognitionRef.current = null;
       setVoiceActive(false);
       setLastMantra(null);
+      setDebugTranscript("");
     }
   }, [open]);
 
@@ -339,7 +365,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
 
     if (mantraName) {
       setLastMantra(mantraName);
-      setTimeout(() => setLastMantra(null), 1600);
+      setTimeout(() => setLastMantra(null), 2400);
     }
   };
 
@@ -352,45 +378,77 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       const rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
-      rec.lang = "hi-IN"; // Accurately recognizes sacred Sanskrit/Hindi names in both scripts
+      rec.lang = "hi-IN";
+      // maxAlternatives for broader recognition coverage
+      rec.maxAlternatives = 3;
 
       rec.onresult = (event: any) => {
+        // Process all results from the event
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const res = event.results[i];
-          const transcript = res[0]?.transcript || "";
+
+          // Gather transcripts from all alternatives for better matching
+          let bestCount = 0;
+          let bestMatch: string | null = null;
+          let bestTranscript = "";
+
+          for (let alt = 0; alt < res.length; alt++) {
+            const transcript = res[alt]?.transcript || "";
+            if (!transcript) continue;
+
+            const { count: mc, lastMatch } = countMantraMatches(transcript);
+            if (mc > bestCount) {
+              bestCount = mc;
+              bestMatch = lastMatch;
+              bestTranscript = transcript;
+            }
+          }
 
           if (res.isFinal) {
-            // Definite sentence/phrase finalized
-            const matches = transcript.match(JAPA_PATTERN);
-            if (matches && matches.length > 0) {
-              countBead(matches.length, matches[matches.length - 1]);
+            // Finalized: count the mantras found
+            setDebugTranscript(bestTranscript);
+            if (bestCount > 0 && bestMatch) {
+              countBead(bestCount, bestMatch);
+              restartAttemptsRef.current = 0; // reset backoff on success
             }
-            processedIndexRef.current = i + 1;
           } else {
-            // Live interim indicator
-            const interimMatches = transcript.match(JAPA_PATTERN);
-            if (interimMatches && interimMatches.length > 0) {
-              setLastMantra(interimMatches[interimMatches.length - 1]);
+            // Interim: show live indicator (don't count yet)
+            if (bestMatch) {
+              setLastMantra(bestMatch);
+              setDebugTranscript(bestTranscript);
             }
           }
         }
       };
 
       rec.onerror = (e: any) => {
-        if (e.error === "not-allowed") {
-          setVoiceError("Microphone access blocked. Please allow mic permissions.");
+        console.warn("[JapaVoice] recognition error:", e.error);
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setVoiceError("Microphone access blocked. Please allow mic permissions in your browser settings.");
           setVoiceActive(false);
+          return;
         }
+        if (e.error === "no-speech") {
+          // User hasn't spoken — just restart silently
+          return;
+        }
+        if (e.error === "network") {
+          setVoiceError("Network error — speech recognition requires internet. Please check your connection.");
+          return;
+        }
+        // For aborted / other errors, let onend handle restart
       };
 
       rec.onend = () => {
         // Reconnect seamlessly if still chanting and below 108
         if (voiceActiveRef.current && countRef.current < 108) {
+          const delay = Math.min(200 * Math.pow(1.5, restartAttemptsRef.current), 3000);
+          restartAttemptsRef.current++;
           setTimeout(() => {
             if (voiceActiveRef.current && countRef.current < 108) {
               startRecognition();
             }
-          }, 120);
+          }, delay);
         } else {
           setVoiceActive(false);
         }
@@ -400,28 +458,33 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       recognitionRef.current = rec;
       setVoiceActive(true);
       setVoiceError(null);
-    } catch {
-      setVoiceError("Could not start microphone.");
+      restartAttemptsRef.current = 0;
+    } catch (err) {
+      console.error("[JapaVoice] start error:", err);
+      setVoiceError("Could not start microphone. Please try again.");
       setVoiceActive(false);
     }
   };
 
   const toggleVoiceMode = () => {
     if (!voiceSupported) {
-      setVoiceError("Voice recognition is not supported in this browser.");
+      setVoiceError("Voice recognition is not supported in this browser. Please use Chrome or Edge.");
       return;
     }
 
     if (voiceActive) {
       setVoiceActive(false);
+      voiceActiveRef.current = false;
       try {
         recognitionRef.current?.abort();
       } catch {}
       recognitionRef.current = null;
+      setDebugTranscript("");
       return;
     }
 
-    processedIndexRef.current = 0;
+    cumulativeCountRef.current = 0;
+    restartAttemptsRef.current = 0;
     startRecognition();
   };
 
@@ -443,8 +506,17 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
         {lastMantra && (
           <div className="mx-auto mb-3 flex items-center justify-center gap-1.5 animate-bounce">
             <span className="inline-flex items-center gap-1 rounded-full bg-saffron/15 border border-saffron/40 px-3 py-1 text-xs font-semibold text-saffron">
-              ✨ Chant Detected: “{lastMantra}” (+1)
+              ✨ Chant Detected: "{lastMantra}" (+1)
             </span>
+          </div>
+        )}
+
+        {/* Debug transcript (only when voice active) */}
+        {voiceActive && debugTranscript && (
+          <div className="mx-auto mb-3 max-w-sm text-center">
+            <p className="text-[10px] text-muted-foreground/70 italic truncate">
+              🎙️ Heard: "{debugTranscript}"
+            </p>
           </div>
         )}
 
@@ -507,6 +579,11 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
             </button>
           </div>
           {voiceError && <p className="mt-2 text-[11px] text-destructive">⚠️ {voiceError}</p>}
+          {voiceActive && !voiceError && (
+            <p className="mt-2 text-[10px] text-muted-foreground/60">
+              💡 Tip: Speak clearly and steadily. Say "Ram Ram" or "Om Namah Shivaya" — each divine name counts as one bead.
+            </p>
+          )}
         </div>
 
         {/* Manual Buttons */}
@@ -522,6 +599,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
             onClick={() => {
               setCount(0);
               setLastMantra(null);
+              setDebugTranscript("");
             }}
             className="flex items-center gap-2 rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
           >
