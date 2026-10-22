@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Copy, Share2, Volume2 } from "lucide-react";
 import { DiyaIcon, HandsIcon, LotusIcon, MarigoldIcon, OmIcon, TempleIcon } from "./icons";
 import { SUGGESTIONS, type Message } from "@/lib/maharaji";
