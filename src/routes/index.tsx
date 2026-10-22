@@ -3,7 +3,7 @@ import Header from "@/components/maharaji/Header";
 import ChatStream from "@/components/maharaji/ChatStream";
 import InputDock from "@/components/maharaji/InputDock";
 import { PrasadModal, JapaModal, MediaDrawer, SettingsSheet } from "@/components/maharaji/Sheets";
-import { BABA_REPLIES, LANGUAGES, createAmbientDrone, type Lang, type Message } from "@/lib/maharaji";
+import { LANGUAGES, createAmbientDrone, getMaharajjiReply, type Lang, type Message } from "@/lib/maharaji";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
@@ -42,6 +42,7 @@ interface Prefs {
 }
 
 const PREFS_KEY = "maharaji.prefs";
+const CHAT_KEY = "maharaji.chat_history";
 
 function Index() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -51,17 +52,35 @@ function Index() {
   const [ambientOn, setAmbientOn] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<Prefs>({ elder: false, contrast: false, reduceMotion: false });
-  const replyIndex = useRef(0);
   const droneRef = useRef<ReturnType<typeof createAmbientDrone> | null>(null);
   const streamRef = useRef<HTMLDivElement | null>(null);
 
-  // Restore elder-friendly preferences
+  // Restore preferences and chat history
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) setPrefs({ elder: false, contrast: false, reduceMotion: false, ...JSON.parse(raw) });
-    } catch { /* fresh device */ }
+      const rawPrefs = localStorage.getItem(PREFS_KEY);
+      if (rawPrefs) setPrefs({ elder: false, contrast: false, reduceMotion: false, ...JSON.parse(rawPrefs) });
+
+      const rawChat = localStorage.getItem(CHAT_KEY);
+      if (rawChat) {
+        const parsed = JSON.parse(rawChat);
+        if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+    } catch {
+      /* fresh device */
+    }
   }, []);
+
+  // Save chat history
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        localStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-30)));
+      } catch {
+        /* storage limit */
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -70,7 +89,9 @@ function Index() {
     root.classList.toggle("reduce-motion", prefs.reduceMotion);
     try {
       localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-    } catch { /* storage unavailable */ }
+    } catch {
+      /* storage unavailable */
+    }
   }, [prefs]);
 
   useEffect(() => () => droneRef.current?.stop(), []);
@@ -80,23 +101,38 @@ function Index() {
     window.setTimeout(() => setToast(null), 2400);
   };
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || typing) return;
-    setMessages((m) => [...m, { id: Date.now(), role: "user", text: trimmed }]);
+    const userMsg: Message = { id: Date.now(), role: "user", text: trimmed };
+    setMessages((m) => [...m, userMsg]);
     setTyping(true);
-    const reply = BABA_REPLIES[replyIndex.current % BABA_REPLIES.length];
-    replyIndex.current += 1;
+
     window.setTimeout(() => {
-      setMessages((m) => [...m, { id: Date.now() + 1, role: "baba", text: reply }]);
+      streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: "smooth" });
+    }, 60);
+
+    try {
+      const reply = await getMaharajjiReply(trimmed, lang);
+      // Gentle pause for spiritual contemplative realism
+      await new Promise((r) => setTimeout(r, 650));
+      const babaMsg: Message = { id: Date.now() + 1, role: "baba", text: reply };
+      setMessages((m) => [...m, babaMsg]);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: Date.now() + 1,
+          role: "baba",
+          text: "Love everyone, serve everyone, remember God. I am with you always, my child. 🙏",
+        },
+      ]);
+    } finally {
       setTyping(false);
       window.setTimeout(() => {
         streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: "smooth" });
       }, 60);
-    }, 1100);
-    window.setTimeout(() => {
-      streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: "smooth" });
-    }, 60);
+    }
   };
 
   const toggleAmbient = () => {
@@ -130,7 +166,7 @@ function Index() {
 
       {/* Small blessing toast */}
       {toast && (
-        <div className="glass-card rise-in fixed bottom-40 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-2.5 text-sm font-medium text-walnut">
+        <div className="glass-card rise-in fixed bottom-36 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-2.5 text-sm font-medium text-walnut shadow-lg border border-marigold/30">
           {toast}
         </div>
       )}
@@ -145,6 +181,7 @@ function Index() {
         onPrefs={setPrefs}
         onClearChat={() => {
           setMessages([]);
+          localStorage.removeItem(CHAT_KEY);
           setSheet(null);
           showToast("Conversation cleared with love 🙏");
         }}

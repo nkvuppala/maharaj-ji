@@ -18,49 +18,154 @@ export const SUGGESTIONS = [
   { icon: "hands", text: "Teach me how to love someone who hurt me" },
   { icon: "om", text: "महाराज-जी, मुझे सही राह दिखाइए" },
   { icon: "temple", text: "Tell me about Kainchi Dham and Hanuman Ji" },
+  { icon: "lotus", text: "I'm worried about my future and career" },
+  { icon: "hands", text: "How should I serve others when I have little?" },
 ];
 
-/** Rotating canned blessings (frontend-only companion). */
-export const BABA_REPLIES = [
-  "Peace is not found by running to the mountains, my child. Peace is found in the middle of the storm, when the heart keeps saying Ram Nam. Do your work with love, and leave the fruit of the work to Him. The river does not worry about the sea — it only flows, and it arrives.",
-  "Love is the only medicine, and it has no side effects. When someone hurts you, remember — Sub Ek. All is One. The same God who lives in you lives in them, even when their actions are crooked. Love them, pray for them, and keep your heart clean. Maharaj-ji says: love everyone, serve everyone, remember God.",
-  "देखो, राह सिर्फ़ एक ही है — प्रेम की राह। जो काम हाथ में है, उसे पूरे मन से करो, और फल की चिंता भगवान को सौंप दो। रोज़ थोड़ा नाम सिमरन करो, रोज़ किसी की सेवा करो। बस, यही सही राह है, बेटा। सब एक है — सबको प्रेम करो, सबकी सेवा करो।",
-  "Kainchi Dham is a little temple tucked between the hills of Kumaon, where the cold river runs and the deodar trees keep silence. Hanuman Ji's murti sits there in His blazing tenderness — He removes every obstacle for the one who remembers Him. People came from all over the world to sit near Maharaj-ji, and they found nothing there but love. That is the whole secret.",
-  "Feed someone today, my child. That is the greatest worship. Feed people — all people — and tell the truth. When you serve another with your own hands, the knot in your heart loosens by itself. God does not live in the sky; He lives in the stomach of the hungry and the tears of the lonely.",
-];
-
+/** Daily Quotes from Neem Karoli Baba */
 export const PRASAD_QUOTES = [
-  "The best way to find God is to love all, serve all, and feed all — and keep repeating His name.",
+  "Love everyone, serve everyone, remember God, and tell the truth.",
+  "Sub Ek — All is One. The same light shines in every heart, so there is no one who is not your own.",
+  "Peace is not something you go looking for outside, beta. It is what remains when you quiet the mind. Sit quietly, chant Ram, and feel — I am there.",
   "Attachment and aversion are the two ropes that bind us. Cut both with love, and you are free.",
   "Don't try to be a big man. Try to be a true man. Serve quietly, and let God do the advertising.",
-  "Sub Ek — all is one. The same light shines in every heart, so there is no one who is not your own.",
   "Love is the strongest medicine in the world. It heals the giver before it heals the receiver.",
+  "Do your duty with love, and leave the results to God. What can fear give you? Nothing. What can faith give you? Everything.",
+  "The best way to find God is to love all, serve all, and feed all — and keep repeating His name.",
+  "Never throw banana peels — see divinity in everything. Nothing in God's creation is waste.",
+  "When you see God in everyone, forgiveness becomes natural. Forgive others not for their sake, but for your own peace.",
+];
+
+/** Inspiring Miracle Stories (Lilas) from knowledgeBase.ts */
+export interface PrasadStory {
+  title: string;
+  location: string;
+  story: string;
+  moral: string;
+}
+
+export const PRASAD_STORIES: PrasadStory[] = [
+  {
+    title: "The Train at Neem Karoli",
+    location: "Neem Karoli Station, Farrukhabad",
+    story:
+      "A British conductor once forced Maharaj-ji off a first-class train carriage because he looked like a simple sadhu in a blanket. Baba quietly stepped down and sat under a tree. When the conductor waved the green flag, the locomotive engine would not budge an inch, even with replacement engines. An Indian official recognized Baba and warned the authorities. The officials humbly apologized and requested Maharaj-ji to board again. The moment Baba sat down, the train started smoothly with a single whistle. Out of reverence, the railway built a station right there named Neem Karoli.",
+    moral: "Humility and divine presence command the natural world more than force.",
+  },
+  {
+    title: "Feeding Thousands (Hanuman Prasad)",
+    location: "Kainchi Dham, Nainital",
+    story:
+      "During a festival bhandara, unexpected busloads of thousands of devotees arrived in the hills. The kitchen workers rushed in panic to Maharaj-ji, saying the tins of ghee and puries were completely finished. Baba smiled, took his blanket, covered the empty ghee containers, and commanded: 'Do not look inside, just keep serving with Hanuman's name.' Thousands ate sumptuous meals to their hearts' content, and when the feast was over, the containers were still miraculously full.",
+    moral: "When you serve with selfless faith, abundance flows from the unseen.",
+  },
+  {
+    title: "Omniscience & Ram Dass",
+    location: "Nainital Hills, 1967",
+    story:
+      "When Harvard psychologist Dr. Richard Alpert first met Maharaj-ji, he was deeply skeptical. The night before, sitting alone under the stars miles away, Alpert had thought tenderly of his deceased mother and the spleen disease that took her life. The moment he sat before Baba, Maharaj-ji looked right through him and asked: 'You were thinking about your mother last night, weren't you? She died of spleen, yes?' Alpert burst into tears; the walls of his intellectual ego dissolved, and he was reborn as Ram Dass.",
+    moral: "The true guru knows every whisper of your soul before you speak.",
+  },
+  {
+    title: "The Blanket of Bullets",
+    location: "Bhavania Ashram",
+    story:
+      "During World War II, a devotee's son was fighting on the battlefield. Back in India, Maharaj-ji suddenly began sweating, groaning, and clutching his thick wool blanket tightly around himself all night as if under fire. In the morning, Baba tossed the blanket down—heavy lead bullets fell out onto the floor, while Baba remained completely unharmed. Days later, a letter arrived: the devotee's son reported that while his entire unit fell, an unseen shield had shielded him from direct machine-gun fire.",
+    moral: "A saint's grace knows no physical boundaries or distances.",
+  },
+  {
+    title: "Larry Brilliant & Smallpox Eradication",
+    location: "Kainchi Dham, 1970s",
+    story:
+      "Young Dr. Larry Brilliant was meditating at Kainchi Dham when Maharaj-ji suddenly poked him and said: 'Doctor, you are wasting time sitting here! Go work for the United Nations WHO. You are going to eradicate smallpox from India. This is God's gift to humanity.' Larry had no WHO connections, but Baba's word came true: Larry joined the campaign, smallpox was eliminated from India, and millions of lives were saved.",
+    moral: "True spiritual realization expresses itself as practical service (Seva) to suffering humanity.",
+  },
 ];
 
 export const CHALISA_LYRICS = [
-  { hi: "श्रीगुरु चरन सरोज रज, निज मनु मुकुरु सुधारि।", en: "With the dust of my Guru's lotus feet I polish the mirror of my mind." },
-  { hi: "बरनउँ रघुबर बिमल जसु, जो दायकु फल चारि।", en: "I sing the stainless glory of Ram, the giver of the four fruits." },
-  { hi: "बुद्धिहीन तनु जानिके, सुमिरौं पवन कुमार।", en: "Knowing myself to be without wisdom, I remember the son of the wind." },
-  { hi: "बल बुधि बिद्या देहु मोहिं, हरहु कलेस बिकार।", en: "Grant me strength, wisdom and knowledge, and take away my afflictions." },
-  { hi: "जय हनुमान ज्ञान गुन सागर। जय कपीस तिहुँ लोक उजागर।", en: "Victory to Hanuman, ocean of wisdom and virtue, light of the three worlds." },
-  { hi: "राम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा।", en: "Ram's messenger, abode of matchless strength, son of Anjani, wind-born." },
+  { hi: "श्रीगुरु चरन सरोज रज, निज मनु मुकुरु सुधारि।", en: "Cleansing the mirror of my mind with the dust of the Guru's lotus feet." },
+  { hi: "बरनउँ रघुबर बिमल जसु, जो दायकु फल चारि।", en: "I describe the pure glory of Lord Ram, which bestows the four fruits of life." },
+  { hi: "बुद्धिहीन तनु जानिके, सुमिरौं पवन-कुमार।", en: "Knowing myself to be devoid of wisdom, I meditate on Pawan-Kumar, the son of the wind." },
+  { hi: "बल बुधि बिद्या देहु मोहिं, हरहु कलेस बिकार।", en: "Grant me strength, wisdom, and knowledge, and remove my afflictions and impurities." },
+  { hi: "जय हनुमान ज्ञान गुन सागर। जय कपीस तिहुँ लोक उजागर।", en: "Hail Hanuman, ocean of wisdom and virtue! Hail King of monkeys, illuminator of the three worlds!" },
+  { hi: "राम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा।", en: "Messenger of Lord Ram, abode of immeasurable strength, son of Anjani, named Pawansut." },
+  { hi: "महाबीर बिक्रम बजरंगी। कुमति निवार सुमति के संगी।", en: "Great hero, valiant with thunderbolt limbs, dispeller of evil thoughts and companion of the wise." },
+  { hi: "कंचन बरन बिराज सुबेसा। कानन कुंडल कुंचित केसा।", en: "Golden-hued and dressed in fine garments, with sparkling earrings and curly hair." },
+  { hi: "हाथ बज्र औ ध्वजा बिराजै। काँधे मूँज जनेऊ साजै।", en: "In your hands shine the thunderbolt and flag, while the sacred grass thread adorns your shoulder." },
+  { hi: "संकर सुवन केसरीनंदन। तेज प्रताप महा जग बंदन।", en: "Incarnation of Shiva, joy of Kesari, whose radiant glory is revered across the entire cosmos." },
+  { hi: "बिद्यावान गुनी अति चातुर। राम काज करिबे को आतुर।", en: "Wise, virtuous, and clever beyond measure, ever eager to carry out Lord Ram's work." },
+  { hi: "प्रभु चरित्र सुनिबे को रसिया। राम लखन सीता मन बसिया।", en: "Delighting in listening to Lord Ram's legends, dwelling forever in the hearts of Ram, Lakshman, and Sita." },
+  { hi: "संकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा।", en: "All difficulties vanish and all pain is erased for whoever remembers the mighty hero Hanuman." },
+  { hi: "पवनतनय संकट हरन, मंगल मूरति रूप।", en: "O son of the wind, redeemer of sorrow, embodiment of auspicious grace." },
+  { hi: "राम लखन सीता सहित, हृदय बसहु सुर भूप।", en: "With Ram, Lakshman, and Sita, dwell forever in my heart, O King of Gods." },
 ];
 
-export const DOCUMENTARIES = [
+export interface VideoMedia {
+  id: string;
+  title: string;
+  blurb: string;
+  category: "chalisa" | "documentary";
+  speaker?: string;
+}
+
+export const EMBEDDED_VIDEOS: VideoMedia[] = [
   {
-    title: "Ram Dass: From Harvard to Hanuman",
-    blurb: "How a Harvard psychologist became Maharaj-ji's devotee and carried his love to the West.",
-    search: "Ram Dass Neem Karoli Baba documentary",
+    id: "xJ3vatsNQDU",
+    title: "Shree Hanuman Chalisa (Traditional)",
+    blurb: "The revered daily prayer chanted at Kainchi Dham for courage, purity, and freedom from fear.",
+    category: "chalisa",
+    speaker: "Traditional Chant",
   },
   {
-    title: "Steve Jobs at Kainchi Dham",
-    blurb: "The 1976 visit that brought Silicon Valley pilgrims to a small Himalayan ashram.",
-    search: "Steve Jobs Kainchi Dham Neem Karoli Baba visit",
+    id: "AETFvQonfV8",
+    title: "Shree Hanuman Chalisa (Gulshan Kumar)",
+    blurb: "The timeless, deeply soulful Indian rendition cherished by millions of families worldwide.",
+    category: "chalisa",
+    speaker: "Gulshan Kumar / Hariharan",
   },
   {
-    title: "Kainchi Dham: The Ashram in the Hills",
-    blurb: "The story of the ashram on the Kosi river — its temples, its prasad, its silence.",
-    search: "Kainchi Dham ashram documentary Uttarakhand",
+    id: "r4GNBw5cu8c",
+    title: "Moved by Grace — The Story of Maharaj-ji",
+    blurb: "Heartwarming documentary featuring devotees whose lives blossomed forever upon meeting Baba.",
+    category: "documentary",
+    speaker: "Devotee Interviews & Ram Dass",
+  },
+  {
+    id: "FgA0SjKnM0g",
+    title: "Real Story of Neem Karoli Baba (हिंदी)",
+    blurb: "Comprehensive journey through Maharaj-ji's life, his ashrams, and timeless teachings.",
+    category: "documentary",
+    speaker: "Kainchi Dham Records",
+  },
+  {
+    id: "qY9JQDh1Kys",
+    title: "Windfall of Grace",
+    blurb: "A poetic and deep visual odyssey into Maharaj-ji's presence and the silent transmission of love.",
+    category: "documentary",
+    speaker: "Archival Footage & Testimonials",
+  },
+];
+
+export const SACRED_RESOURCES = [
+  {
+    title: "Hanuman Journal",
+    url: "https://hanumanjournal.com/",
+    desc: "Stories, memoirs, and devotional writing about Maharaj-ji and his circle of devotees.",
+  },
+  {
+    title: "Official Neem Karoli Baba Ashram",
+    url: "https://www.neemkarolibaba.com/",
+    desc: "Authentic information on Kainchi Dham, Vrindavan, and ashram visiting guidelines.",
+  },
+  {
+    title: "Love Serve Remember Foundation",
+    url: "https://www.ramdass.org/",
+    desc: "Teachings of Ram Dass, Maharaj-ji's photos, archival audio discourses, and kirtan.",
+  },
+  {
+    title: "Be Love Now & Miracle of Love",
+    url: "https://www.amazon.com/Miracle-Love-Stories-Karoli-Baba/dp/1887474005",
+    desc: "The definitive compendium of 1,000+ personal miracle stories recorded by devotees.",
   },
 ];
 
@@ -71,13 +176,15 @@ export function createAmbientDrone() {
 
   const start = () => {
     if (ctx) return;
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     ctx = new AudioCtx();
     const master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
     master.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 2.5);
-    // Sa & Pa drone (tanpura feel)
+    // Sa & Pa drone (tanpura feel: D fundamental, A fifth, octave D)
     [146.83, 220.0, 293.66].forEach((freq, i) => {
       const osc = ctx!.createOscillator();
       osc.type = "sine";
@@ -105,7 +212,9 @@ export function createAmbientDrone() {
     nodes.forEach((n) => {
       try {
         if ("stop" in n) n.stop(closing.currentTime + 1.2);
-      } catch { /* already stopped */ }
+      } catch {
+        /* already stopped */
+      }
     });
     nodes = [];
     ctx = null;
@@ -113,4 +222,130 @@ export function createAmbientDrone() {
   };
 
   return { start, stop };
+}
+
+/** Play a sacred temple bell chime on Mala (108) completion */
+export function playTempleBell() {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(528, ctx.currentTime); // Solfeggio 528Hz love/miracle tone
+    osc.frequency.exponentialRampToValueAtTime(1056, ctx.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(528, ctx.currentTime + 0.3);
+
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 3.0);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 3.0);
+  } catch {
+    /* audio blocked */
+  }
+}
+
+/**
+ * Intelligent spiritual response matcher based on knowledgeBase.ts & trainingData.ts.
+ * Supports English, Hindi, Hinglish, Telugu, and Tamil.
+ */
+export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
+  const query = userQuery.toLowerCase().trim();
+
+  // 1. Check if user configured an actual Groq API key in Settings
+  const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
+  if (savedKey && savedKey.startsWith("gsk_")) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${savedKey}`,
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-20b",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are embodying Neem Karoli Baba (Maharaj-ji). Speak with warmth, brevity (2-4 sentences max), fatherly affection ('beta' or 'my child'), and timeless wisdom. Teachings: Love everyone, serve everyone, remember God, Sub Ek. Match the user's language.",
+            },
+            { role: "user", content: userQuery },
+          ],
+          temperature: 0.9,
+          max_tokens: 350,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content;
+        if (text) return text;
+      }
+    } catch {
+      /* fallback to local matcher */
+    }
+  }
+
+  // 2. Intelligent local matcher from trainingData.ts and knowledgeBase.ts
+  if (query.includes("shanti") || query.includes("peace") || query.includes("calm") || query.includes("quiet")) {
+    if (lang === "hi") {
+      return "शांति बाहर खोजने से नहीं मिलती, बेटा। जब मन की भागदौड़ शांत होती है, तब शांति अपने आप प्रकट होती है। आंखें बंद करो, 'राम' नाम लो, और जानो — मैं सदा तुम्हारे पास हूँ। 🙏";
+    }
+    return "Peace is not something you find by running to the mountains, my child. It is already within you. When you quiet the noisy mind and chant Ram, peace remains. Sit quietly. I am right here with you. 🙏";
+  }
+
+  if (query.includes("hurt") || query.includes("love") || query.includes("forgive") || query.includes("enemy") || query.includes("prem")) {
+    if (lang === "hi") {
+      return "बेटा, जो तुम्हें दुख देता है, वह भी कष्ट में है। उनके कर्मों को मत देखो, उनके भीतर बैठे भगवान को देखो। क्षमा करो — उनके लिए नहीं, अपनी आत्मा की शांति के लिए। सबको प्रेम करो, सब एक है। 🙏";
+    }
+    return "The one who hurts you is also suffering, my child. See their pain, not their actions. When you see God in everyone, love becomes effortless. Forgive — not for their sake, but for your own peace. Sub Ek. 🙏";
+  }
+
+  if (query.includes("fear") || query.includes("worry") || query.includes("future") || query.includes("job") || query.includes("career") || query.includes("chinta")) {
+    if (lang === "hi") {
+      return "चिंता से आज तक किसका भला हुआ है? अपना कर्तव्य पूरे प्रेम से करो, बाकी सब भगवान पर छोड़ दो। जब मैं तुम्हारे साथ हूँ, तो डरने की क्या बात है, बेटा? विश्वास रखो। 🙏";
+    }
+    return "What can fear give you, beta? Nothing. What can faith give you? Everything. Do your duty with full love, and leave the results to God. When I am with you always, what is there to fear? 🙏";
+  }
+
+  if (query.includes("serve") || query.includes("seva") || query.includes("money") || query.includes("paisa") || query.includes("help")) {
+    if (lang === "hi") {
+      return "सेवा पैसे से नहीं, सच्चे हृदय से होती है, बेटा। भूखे को भोजन कराओ, किसी उदास व्यक्ति को अपनी मुस्कान दो, किसी की बात ध्यान से सुनो। जब तुम दूसरों की सेवा करते हो, तो तुम भगवान की ही सेवा करते हो। 🙏";
+    }
+    return "Seva is never about money, my child. Give your time. Give your attention. Feed the hungry, comfort the lonely. When you serve another with your hands, you serve God directly. The giving heart is the richest heart. 🙏";
+  }
+
+  if (query.includes("kainchi") || query.includes("hanuman") || query.includes("dham") || query.includes("temple")) {
+    return "Kainchi Dham is a sacred pocket between the green hills of Kumaon where the cold mountain river whispers Ram Nam. Hanuman Ji sits there with immense tenderness, removing every burden from the devotee who calls on Him with a pure heart. Have faith — His grace is never delayed. 🙏";
+  }
+
+  if (query.includes("meaning of life") || query.includes("purpose") || query.includes("arth") || query.includes("jivan")) {
+    if (lang === "hi") {
+      return "जीवन का सार बहुत सरल है, बेटा: 'सबको प्रेम करो, सबकी सेवा करो, भगवान को याद रखो, और सत्य बोलो।' इसी में सारा ज्ञान और मुक्ति समाई है। 🙏";
+    }
+    return "The meaning of life is very simple, beta: Love everyone, serve everyone, remember God, and tell the truth. Everything else is just passing scenery. Keep the heart pure. 🙏";
+  }
+
+  if (query.includes("ram") || query.includes("mantra") || query.includes("chant") || query.includes("naam")) {
+    return "Keep God's name on your lips always, my child. Ram, Ram, Ram — repeat it while walking, eating, or working. Slowly, the Holy Name dissolves every anxiety and becomes your constant protector. 🙏";
+  }
+
+  // 3. Multilingual Default Fallbacks
+  if (lang === "hi") {
+    return "बेटा, जो भी तुम्हारे मन पर बोझ है, उसे भगवान के चरणों में समर्पित कर दो। प्रेम और सच्चाई से काम करो, सब मंगलमय होगा। मैं सदा तुम्हारे साथ हूँ। 🙏";
+  }
+  if (lang === "te") {
+    return "బిడ్డా, మీ హృదయంలోని భారాన్ని భగవంతునికి సమర్పించండి. అందరినీ ప్రేమించండి, అందరికీ సేవ చేయండి, భగవంతుని స్మరించండి. అంతా మంగళమే జరుగుతుంది. 🙏";
+  }
+  if (lang === "ta") {
+    return "குழந்தையே, உங்கள் மனபாரத்தை இறைவனிடம் ஒப்படையுங்கள். அனைவரையும் நேசியுங்கள், சேவை செய்யுங்கள், இறைவனை நினையுங்கள். எல்லாம் நன்மையாகவே முடியும். 🙏";
+  }
+
+  return "Feed someone today, my child. Love all beings, tell the truth, and keep God's name in your heart. When you give freely without asking for a reward, your path clears on its own. I am with you always. 🙏";
 }

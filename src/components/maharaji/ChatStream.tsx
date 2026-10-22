@@ -30,6 +30,27 @@ function WaveBars() {
   );
 }
 
+function renderFormattedText(text: string) {
+  const lines = text.split("\n");
+  return lines.map((line, lineIdx) => {
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    return (
+      <span key={lineIdx} className="block">
+        {parts.map((part, i) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <strong key={i} className="font-semibold text-foreground-deep">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        })}
+      </span>
+    );
+  });
+}
+
 export default function ChatStream({ messages, typing, onSuggestion }: ChatStreamProps) {
   const [speakingId, setSpeakingId] = useState<number | null>(null);
 
@@ -41,8 +62,22 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
       return;
     }
     window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(msg.text);
-    utter.rate = 0.85;
+
+    // Clean text for speech
+    const clean = msg.text
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/[🙏🕉️🌸✨🔔]/g, "")
+      .trim();
+
+    const utter = new SpeechSynthesisUtterance(clean);
+
+    // Multilingual speech detection
+    if (/[\u0900-\u097F]/.test(msg.text)) utter.lang = "hi-IN";
+    else if (/[\u0C00-\u0C7F]/.test(msg.text)) utter.lang = "te-IN";
+    else if (/[\u0B80-\u0BFF]/.test(msg.text)) utter.lang = "ta-IN";
+    else utter.lang = "en-IN";
+
+    utter.rate = 0.88;
     utter.pitch = 0.95;
     utter.onend = () => setSpeakingId(null);
     utter.onerror = () => setSpeakingId(null);
@@ -53,20 +88,29 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
   const copyQuote = async (msg: Message) => {
     try {
       await navigator.clipboard.writeText(msg.text);
-    } catch { /* clipboard blocked */ }
+    } catch {
+      /* clipboard blocked */
+    }
   };
 
   const shareBlessing = async (msg: Message) => {
-    const shareData = { title: "A blessing from Maharaj-ji 🙏", text: msg.text };
+    const shareData = {
+      title: "A blessing from Maharaj-ji 🙏",
+      text: `${msg.text}\n— Neem Karoli Baba, Sub Ek`,
+    };
     try {
       if (navigator.share) {
         await navigator.share(shareData);
         return;
       }
-    } catch { /* user cancelled or unsupported */ }
+    } catch {
+      /* user cancelled or unsupported */
+    }
     try {
       await navigator.clipboard.writeText(`${msg.text}\n— In the spirit of Neem Karoli Baba, Sub Ek 🙏`);
-    } catch { /* clipboard blocked */ }
+    } catch {
+      /* clipboard blocked */
+    }
   };
 
   return (
@@ -91,10 +135,12 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
               <button
                 key={s.text}
                 onClick={() => onSuggestion(s.text)}
-                className={`parchment-scroll group flex items-start gap-3 rounded-2xl p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${i % 2 === 1 ? "sm:translate-y-3" : ""}`}
+                className={`parchment-scroll group flex items-start gap-3 rounded-2xl p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                  i % 2 === 1 ? "sm:translate-y-2" : ""
+                }`}
               >
                 <span className="mt-0.5 shrink-0 text-terracotta transition-colors group-hover:text-primary">
-                  {SUGGESTION_ICONS[s.icon]}
+                  {SUGGESTION_ICONS[s.icon] ?? <LotusIcon className="h-5 w-5" />}
                 </span>
                 <span className="text-sm leading-relaxed text-foreground sm:text-[0.95rem]">{s.text}</span>
               </button>
@@ -107,7 +153,7 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
         </section>
       )}
 
-      {/* Conversation */}
+      {/* Conversation stream */}
       <div className="flex flex-col gap-5" aria-live="polite">
         {messages.map((m) =>
           m.role === "user" ? (
@@ -123,7 +169,9 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
               </span>
               <div className="max-w-[88%] sm:max-w-[80%]">
                 <div className="glass-card rounded-3xl rounded-tl-lg border-marigold/50 px-5 py-4">
-                  <p className="text-[0.98rem] leading-[1.85] text-foreground">{m.text}</p>
+                  <div className="text-[0.98rem] leading-[1.85] text-foreground">
+                    {renderFormattedText(m.text)}
+                  </div>
                 </div>
                 {/* Micro-actions */}
                 <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-1">
@@ -136,7 +184,7 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
                     }`}
                   >
                     {speakingId === m.id ? <WaveBars /> : <Volume2 className="h-3.5 w-3.5" />}
-                    {speakingId === m.id ? "Listening..." : "Listen"}
+                    {speakingId === m.id ? "Speaking..." : "Listen"}
                   </button>
                   <button
                     onClick={() => copyQuote(m)}
@@ -180,7 +228,13 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
 function Feather({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M19 5c-6.5 0-11 4.5-11 11l-.5 3M19 5c.8 6-2.5 11-9 11.5M19 5l-9.5 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M19 5c-6.5 0-11 4.5-11 11l-.5 3M19 5c.8 6-2.5 11-9 11.5M19 5l-9.5 11"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
