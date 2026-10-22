@@ -138,7 +138,7 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
   const shareBlessing = async (msg: Message) => {
     const shareData = {
       title: "A blessing from Maharaj-ji 🙏",
-      text: `${msg.text}\n— Neem Karoli Baba, Sub Ek`,
+      text: `${msg.text}\n- Neem Karoli Baba, Sub Ek`,
     };
     try {
       if (navigator.share) {
@@ -149,7 +149,7 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
       /* user cancelled or unsupported */
     }
     try {
-      await navigator.clipboard.writeText(`${msg.text}\n— In the spirit of Neem Karoli Baba, Sub Ek 🙏`);
+      await navigator.clipboard.writeText(`${msg.text}\n- In the spirit of Neem Karoli Baba, Sub Ek 🙏`);
     } catch {
       /* clipboard blocked */
     }

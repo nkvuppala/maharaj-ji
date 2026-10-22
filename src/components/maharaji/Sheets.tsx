@@ -155,8 +155,8 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
   const sharePrasad = async () => {
     const textToShare =
       mode === "quote"
-        ? `🌸 Daily Prasad from Maharaj-ji:\n“${quote}”\n— Neem Karoli Baba, Sub Ek 🙏`
-        : `✨ Miracle Story (Lila) of Maharaj-ji:\n“${story.title}”\n\n${story.story}\n\nLesson: “${story.moral}”\n— Sub Ek, Love Serve Remember 🙏`;
+        ? `🌸 Daily Prasad from Maharaj-ji:\n“${quote}”\n- Neem Karoli Baba, Sub Ek 🙏`
+        : `✨ Miracle Story (Lila) of Maharaj-ji:\n“${story.title}”\n\n${story.story}\n\nLesson: “${story.moral}”\n- Sub Ek, Love Serve Remember 🙏`;
 
     try {
       if (navigator.share) {
@@ -225,7 +225,7 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
               <OmIcon className="mx-auto mb-3 h-5 w-5 text-marigold" />
               <p className="font-display text-lg leading-relaxed text-foreground-deep sm:text-xl">“{quote}”</p>
               <footer className="mt-4 text-xs font-medium tracking-[0.18em] text-walnut/70 uppercase">
-                — Neem Karoli Baba
+                - Neem Karoli Baba
               </footer>
             </blockquote>
           </div>
@@ -576,7 +576,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           return; // Silent restart on onend
         }
         if (e.error === "network") {
-          setVoiceError("Network error — speech recognition requires internet. Reconnecting...");
+          setVoiceError("Network error: speech recognition requires internet. Reconnecting...");
           return;
         }
       };
@@ -1073,7 +1073,7 @@ export function ProposalModal({ open, onClose }: { open: boolean; onClose: () =>
     try {
       await navigator.clipboard.writeText(PROPOSAL_RAW_MD);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      setTimeout(() => setCopied(false), 2000);
     } catch {}
   };
 
@@ -1093,360 +1093,342 @@ export function ProposalModal({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <Overlay open={open} onClose={onClose} wide={true}>
+      {/* 1. Pinned Header */}
       <SheetHeader
-        title="Project Proposal & Roadmap"
-        subtitle="Maharaj-ji Speaks • Vision, AI Research Agent, Japa Voice & Architecture"
+        title="Project Proposal"
+        subtitle="Maharaj-ji Speaks: Simple Plan & Roadmap"
         onClose={onClose}
       />
 
-      <div className="overflow-y-auto px-6 py-5 max-h-[80vh] space-y-6">
-        {/* Banner with Actions */}
-        <div className="glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-3xl p-4 border border-saffron/40 bg-gradient-to-r from-saffron/10 via-amber-glow/20 to-marigold/10 shadow-sm">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-saffron text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase shadow-xs">
-                Official Proposal
-              </span>
-              <span className="text-xs font-semibold text-foreground-deep">Executive Roadmap Document</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Prepared for presentation & stakeholders. Temporary demo tab.
-            </p>
+      {/* 2. Pinned Top Bar: Actions + Tab Switcher (Stays visible while scrolling) */}
+      <div className="shrink-0 border-b border-marigold/20 bg-secondary/60 backdrop-blur-md px-4 sm:px-6 py-2.5 space-y-2">
+        {/* Actions & Badge */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="rounded-full bg-saffron text-white text-[10px] font-extrabold px-2 py-0.5 tracking-wider uppercase shrink-0">
+              Demo Proposal
+            </span>
+            <span className="text-[11px] text-muted-foreground truncate hidden sm:inline">
+              Plain language roadmap for presentation
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={copyProposal}
-              className="flex items-center gap-1.5 rounded-full border border-marigold/40 bg-secondary px-3.5 py-1.5 text-xs font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
+              className="flex items-center gap-1 rounded-full border border-marigold/40 bg-card px-2.5 py-1 text-xs font-semibold text-walnut transition-colors hover:bg-amber-glow"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <FileText className="h-3.5 w-3.5" />}
-              {copied ? "Copied! ✨" : "Copy Markdown"}
+              <span>{copied ? "Copied!" : "Copy"}</span>
             </button>
             <button
               onClick={downloadProposal}
-              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-saffron to-terracotta px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow transition-transform hover:scale-105 active:scale-95"
+              className="flex items-center gap-1 rounded-full bg-gradient-to-r from-saffron to-terracotta px-3 py-1 text-xs font-semibold text-white shadow-xs transition-transform hover:scale-105 active:scale-95"
             >
-              <Download className="h-3.5 w-3.5" /> Download .md
+              <Download className="h-3.5 w-3.5" />
+              <span>Download .md</span>
             </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap items-center justify-center gap-2 border-b border-marigold/20 pb-3">
+        {/* Tab Pills - Scrollable horizontally on mobile to prevent wrapping issues */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           {[
-            { id: "vision", label: "🌸 Vision & Purpose" },
-            { id: "features", label: "🧠 Key Features & Agent" },
-            { id: "architecture", label: "🛠️ Architecture & Security" },
-            { id: "roadmap", label: "📅 Implementation Phasing" },
+            { id: "vision", label: "🌸 Why This Exists" },
+            { id: "features", label: "🧠 New Features" },
+            { id: "architecture", label: "🛠️ How It Works" },
+            { id: "roadmap", label: "📅 Project Roadmap" },
           ].map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+              className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all ${
                 activeTab === t.id
-                  ? "bg-saffron text-white shadow-md shadow-saffron/20"
-                  : "bg-secondary text-walnut hover:bg-amber-glow hover:text-primary"
+                  ? "bg-saffron text-white shadow-sm"
+                  : "bg-card/90 text-walnut border border-marigold/30 hover:bg-amber-glow hover:text-primary"
               }`}
             >
               {t.label}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Tab 1: Vision & Purpose */}
+      {/* 3. Dedicated Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-h-[62vh] sm:max-h-[68vh]">
+        {/* Tab 1: Why This Exists */}
         {activeTab === "vision" && (
-          <div className="space-y-4">
-            <div className="parchment-scroll rounded-3xl p-5 border border-marigold/30">
+          <div className="space-y-3.5">
+            <div className="parchment-scroll rounded-2xl p-4 sm:p-5 border border-marigold/30">
               <h3 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
-                <span>🕊️</span> Digital Sanctuary vs. Commercial Chatbot
+                <span>🕊️</span> Why This Website Was Started
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
-                The platform is far more than an AI app; it is a <strong>digital sanctuary</strong> in the sacred spirit
-                of <strong>Neem Karoli Baba (Maharaj-ji)</strong>. In moments of anxiety, loneliness, or spiritual searching,
-                devotees arrive seeking warmth, solace, and timeless wisdom: <em>Sub Ek — Love Everyone, Serve Everyone, Remember God</em>.
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-foreground/90">
+                This website is made for devotees and seekers who love Neem Karoli Baba (Maharaj-ji). In times of worry,
+                sadness, or loneliness, people can come here to find peace, warmth, and fatherly comfort:
+                <strong> Love Everyone, Serve Everyone, Remember God</strong>.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="glass-card rounded-2xl p-4 border border-marigold/30">
-                <span className="text-xl">🌟</span>
-                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Autonomous Wisdom</h4>
+                <span className="text-xl">📚</span>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Never Runs Out of Stories</h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Never running out of lilas by deploying an AI Research Agent that studies verified memoirs and Kainchi historical records.
+                  Instead of repeating the same 5 quotes, an AI story finder searches verified old books for real memories and miracles.
                 </p>
               </div>
 
               <div className="glass-card rounded-2xl p-4 border border-marigold/30">
                 <span className="text-xl">📿</span>
-                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Hands-Free Devotion</h4>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Chant With Your Voice</h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Real-time live voice recognition that turns speech into 108 mala counting without touching or looking at screens.
+                  Devotees can chant 'Ram Ram' aloud without touching the screen. The app hears you and counts the beads automatically.
                 </p>
               </div>
 
               <div className="glass-card rounded-2xl p-4 border border-marigold/30">
                 <span className="text-xl">⚡</span>
-                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">100% Free & Lightning Fast</h4>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Free and Fast for Everyone</h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Zero friction. Devotees never need API keys; serverless proxy caching keeps operational expense at ~$0.
+                  Users never need to create accounts or buy API keys. The site runs fast and costs almost zero dollars to host.
                 </p>
               </div>
 
               <div className="glass-card rounded-2xl p-4 border border-marigold/30">
                 <span className="text-xl">🇮🇳</span>
-                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Culturally Native</h4>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Speaks Your Language</h4>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Seamless Hindi/Hinglish understanding and Indian voice synthesis honoring the authentic tone of Maharaj-ji.
+                  If someone types in conversational Hinglish ("baba kripa karo"), Baba replies in loving, natural Hindi.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab 2: Key Features & Proposals */}
+        {/* Tab 2: Key Features */}
         {activeTab === "features" && (
-          <div className="space-y-4">
-            {/* Feature 1: Autonomous Research Agent */}
-            <div className="glass-card rounded-3xl p-5 border border-saffron/40 relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
-                  <span>🧠</span> Autonomous Spiritual Research Agent ("Lila & Vani Seeker")
+          <div className="space-y-3.5">
+            {/* Feature 1: AI Story Finder */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 border border-saffron/40">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <h4 className="font-display text-sm sm:text-base font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <span>🧠</span> 1. AI Story Finder: Searching Old Books for Baba's Stories
                 </h4>
-                <span className="rounded-full bg-saffron/20 border border-saffron/40 px-2.5 py-0.5 text-[11px] font-bold text-saffron">
-                  User-Pitched Core Feature
+                <span className="rounded-full bg-saffron/20 border border-saffron/40 px-2 py-0.5 text-[10px] font-bold text-saffron">
+                  User Idea
                 </span>
               </div>
               <p className="mt-2 text-xs sm:text-sm text-foreground/90 leading-relaxed">
-                Maharaj-ji never wrote formal books; his teachings live in oral testimonies, devotee memoirs, and ashram diaries.
-                The Autonomous Research Agent continuously discovers, authenticates, and indexes new stories:
+                Baba never wrote books himself, but his devotees (like Ram Dass and Dada Mukerjee) wrote down hundreds of real
+                miracles and conversations. We are building an AI agent that searches verified books to find real stories:
               </p>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
-                  <span className="text-xs font-bold text-terracotta block">1. Historical Archive</span>
+
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="rounded-xl bg-secondary/80 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">Reads Real Books</span>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Indexes *Miracle of Love* (Ram Dass), Dada Mukerjee diaries, Parvati Markus interviews, and Kainchi bulletins.
+                    Searches *Miracle of Love*, Dada Mukerjee diaries, and historical ashram bulletins.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
-                  <span className="text-xs font-bold text-terracotta block">2. 4-Point Provenance Gate</span>
+                <div className="rounded-xl bg-secondary/80 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">Checks Facts (Zero Lies)</span>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Strict verification (Devotee Name, Location, 1930s-1973 Timeline, Core Virtue) to eliminate hallucinations.
+                    Checks who told the story, which ashram it happened in, and the year (1930 to 1973). Never makes up fake miracles.
                   </p>
                 </div>
-                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
-                  <span className="text-xs font-bold text-terracotta block">3. 365-Day Expansion</span>
+                <div className="rounded-xl bg-secondary/80 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">New Story Every Day</span>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Populates daily prasad stories so every day of the year has an authentic, distinct miracle account.
+                    Expands the daily reading so devotees have a fresh, authentic teaching every single morning.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Feature 2: Voice-Activated Hands-Free Japa Mala */}
-            <div className="glass-card rounded-3xl p-5 border border-marigold/40">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
-                  <span>📿</span> Voice-Activated Japa Mala Counter (Live Chanting)
+            {/* Feature 2: Voice Japa Counter */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 border border-marigold/40">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <h4 className="font-display text-sm sm:text-base font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <span>📿</span> 2. Voice-Activated Japa Mala (Live Chanting Counter)
                 </h4>
-                <span className="rounded-full bg-green-500/15 border border-green-500/40 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
-                  Live in Demo ✅
+                <span className="rounded-full bg-green-500/15 border border-green-500/40 px-2 py-0.5 text-[10px] font-bold text-green-700">
+                  Working in Demo
                 </span>
               </div>
-              <p className="mt-2 text-xs sm:text-sm text-foreground/90 leading-relaxed">
-                Devotees chant aloud naturally (*"Ram Ram"*, *"Sita Ram"*, *"Om Namah Shivaya"*). The counter increments
-                accurately and live as words are spoken, without waiting for pauses.
+              <p className="mt-1.5 text-xs sm:text-sm text-foreground/90 leading-relaxed">
+                Devotees chant aloud (like 'Ram Ram' or 'Om Namah Shivaya') and the counter ticks beads live as you speak:
               </p>
-              <ul className="mt-2.5 space-y-1.5 text-xs text-muted-foreground">
-                <li className="flex items-center gap-2">
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
-                  <strong>Phrase-Aware Pairing:</strong> Chanting "Ram Ram" 13 times counts as exactly 13 beads (not 26 or 28).
+                  <strong>Accurate Counting:</strong> Saying 'Ram Ram' 13 times counts as exactly 13 beads (not 26 or 28).
                 </li>
-                <li className="flex items-center gap-2">
+                <li className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
-                  <strong>Target Selector:</strong> Select between Ram Ram (Pair), Sita Ram, Ram (Single), Shiva, Hare Krishna, or Auto.
+                  <strong>Live Speed:</strong> Counts instantly while chanting without needing silence or pauses.
                 </li>
-                <li className="flex items-center gap-2">
+                <li className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
-                  <strong>Wood-Chime & 528Hz Bell:</strong> Instant acoustic feedback on each bead; Solfeggio temple bell on 108.
+                  <strong>Gentle Sounds:</strong> Soft wooden bead click on every count, and a peaceful temple bell on bead 108.
                 </li>
               </ul>
             </div>
 
-            {/* Features 3 & 4 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+            {/* Other Features Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🇮🇳 Native Hindi & Hinglish</h5>
-                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                  <h5 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep">3. Natural Hindi Replies</h5>
+                  <span className="text-[9px] font-bold text-green-700 bg-green-500/10 px-1.5 py-0.5 rounded-full">Working</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Colloquial Hinglish queries ("Mujhe shanti chahiye") auto-trigger warm fatherly Hindi replies ("बेटा...").
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  When users type in Hinglish ("baba mujhe rasta dikhaiye"), Baba replies in warm Hindi ("beta, chinta mat karo").
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🔊 Full Audio Playback Suite</h5>
-                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                  <h5 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep">4. Listen, Pause, and Play</h5>
+                  <span className="text-[9px] font-bold text-green-700 bg-green-500/10 px-1.5 py-0.5 rounded-full">Working</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Listen, Pause, Resume, and Stop controls across both chat blessings and Daily Prasad readings.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Listen to answers and stories aloud with simple Pause, Resume, and Stop buttons.
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🌸 Single Prasad & WhatsApp Share</h5>
-                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                  <h5 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep">5. Morning Prasad with WhatsApp Share</h5>
+                  <span className="text-[9px] font-bold text-green-700 bg-green-500/10 px-1.5 py-0.5 rounded-full">Working</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  One daily teaching synchronized to the calendar day with instant WhatsApp / SMS sharing.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  One meaningful teaching each morning that you can send to family on WhatsApp with one click.
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
                 <div className="flex items-center justify-between">
-                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🕊️ Community Lila Submission</h5>
-                  <span className="text-[10px] font-bold text-saffron bg-saffron/10 px-2 py-0.5 rounded-full">Phase 3</span>
+                  <h5 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep">6. Family Memories Portal</h5>
+                  <span className="text-[9px] font-bold text-saffron bg-saffron/10 px-1.5 py-0.5 rounded-full">Next Phase</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Portal for families in Uttarakhand/UP to submit undocumented memories for automated agent verification.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Families in Uttarakhand and UP can submit oral memories of Baba so they are preserved for future generations.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab 3: Architecture & Security */}
+        {/* Tab 3: How It Works */}
         {activeTab === "architecture" && (
-          <div className="space-y-4">
-            <div className="parchment-scroll rounded-3xl p-5 border border-marigold/30">
-              <h3 className="font-display text-base font-semibold text-foreground-deep mb-3 flex items-center gap-2">
-                <span>🛠️</span> System Flow & Gateway Architecture
+          <div className="space-y-3.5">
+            <div className="parchment-scroll rounded-2xl p-4 sm:p-5 border border-marigold/30">
+              <h3 className="font-display text-sm sm:text-base font-semibold text-foreground-deep mb-2 flex items-center gap-1.5">
+                <span>🛠️</span> How It Runs Fast and Free
               </h3>
+              <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                Simple flow showing how requests travel securely without costing money:
+              </p>
 
-              {/* Visual Architecture Flow */}
-              <div className="rounded-2xl bg-walnut/5 p-4 border border-marigold/20 font-mono text-xs space-y-2">
-                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
-                    📱 Devotee Browser
+              {/* Simplified Visual Diagram */}
+              <div className="rounded-xl bg-walnut/5 p-3 border border-marigold/20 text-xs space-y-2">
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-center">
+                  <span className="rounded-lg bg-card px-2.5 py-1 shadow-xs border border-marigold/30 font-semibold text-foreground-deep text-[11px]">
+                    📱 Devotee Phone
                   </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-saffron/15 px-3 py-1.5 border border-saffron/40 font-semibold text-saffron">
-                    ☁️ Vercel / Cloudflare CDN
+                  <span className="text-saffron font-bold">→</span>
+                  <span className="rounded-lg bg-saffron/15 px-2.5 py-1 border border-saffron/40 font-semibold text-saffron text-[11px]">
+                    ☁️ Website CDN
                   </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
-                    ⚛️ React 19 UI
+                  <span className="text-saffron font-bold">→</span>
+                  <span className="rounded-lg bg-amber-glow/60 px-2.5 py-1 border border-marigold/40 font-semibold text-walnut text-[11px]">
+                    📖 Local Wisdom Engine
                   </span>
                 </div>
 
-                <div className="my-2 text-center text-muted-foreground">⇣</div>
+                <div className="text-center text-[11px] text-muted-foreground">↓ (If complex question)</div>
 
-                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                  <span className="rounded-lg bg-amber-glow/60 px-3 py-1.5 border border-marigold/40 font-semibold text-walnut">
-                    📖 Local Wisdom Engine (Offline)
+                <div className="flex flex-wrap items-center justify-center gap-1.5 text-center">
+                  <span className="rounded-lg bg-terracotta/15 px-2.5 py-1 border border-terracotta/40 font-semibold text-terracotta text-[11px]">
+                    🔒 Secure Server Gateway (Hidden Key)
                   </span>
-                  <span className="text-saffron font-bold">⇄</span>
-                  <span className="rounded-lg bg-terracotta/15 px-3 py-1.5 border border-terracotta/40 font-semibold text-terracotta">
-                    🔒 Serverless Gateway (Hidden Key)
-                  </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
-                    🤖 Groq LLaMA-3.3 70B
-                  </span>
-                </div>
-
-                <div className="my-2 text-center text-muted-foreground">⇣ (Autonomous Pipeline)</div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
-                  <span className="rounded-lg bg-saffron/20 px-3 py-1.5 border border-saffron/40 font-semibold text-saffron">
-                    📚 Memoir Archives
-                  </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
-                    🔍 Research Agent
-                  </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-green-500/15 px-3 py-1.5 border border-green-500/40 font-semibold text-green-800">
-                    🛡️ Provenance Gate
-                  </span>
-                  <span className="text-saffron font-bold">➔</span>
-                  <span className="rounded-lg bg-amber-glow/60 px-3 py-1.5 border border-marigold/40 font-semibold text-walnut">
-                    365+ Daily Lilas
+                  <span className="text-saffron font-bold">→</span>
+                  <span className="rounded-lg bg-card px-2.5 py-1 shadow-xs border border-marigold/30 font-semibold text-foreground-deep text-[11px]">
+                    🤖 Fast AI Response
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
-                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-green-600" /> Zero Secret Exposure
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
+                <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-green-600" /> No API Keys Needed
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  All AI completions are shielded behind a serverless proxy route (`/api/chat`). Devotees never enter API keys.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Users never need an account or API key. All keys stay secure on the server so the site is safe.
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
-                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
-                  <Layers className="h-4 w-4 text-saffron" /> Cost Optimization
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
+                <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-saffron" /> Near $0 Monthly Cost
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Compact 150-token system prompts and edge caching keep monthly operational expenses near $0.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Fast free-tier hosting (Groq and Vercel) and compact prompts keep monthly server expenses near zero.
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
-                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
-                  <Heart className="h-4 w-4 text-terracotta" /> Elder Accessibility
+              <div className="glass-card rounded-xl p-3.5 border border-marigold/30">
+                <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <Heart className="h-4 w-4 text-terracotta" /> Elderly Devotee Friendly
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Bada Akshar (large fonts), high contrast, and screen-reader accessibility for elderly devotees.
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Includes large text mode (Bada Akshar) and high-contrast text so parents and grandparents can read easily.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab 4: Roadmap & Phasing */}
+        {/* Tab 4: Project Roadmap */}
         {activeTab === "roadmap" && (
-          <div className="space-y-3.5">
+          <div className="space-y-3">
             {[
               {
-                phase: "Phase 1: UI Polish & Core Experience",
-                status: "Completed ✅",
+                phase: "Phase 1: Design and Core Experience",
+                status: "Done",
                 statusClass: "bg-green-500/15 text-green-700 border-green-500/30",
-                desc: "Saffron sanctuary layout, perfectly aligned cards, single daily prasad, WhatsApp share, full audio playback controls (Listen/Pause/Resume/Stop).",
+                desc: "Peaceful saffron layout, morning prasad teaching, WhatsApp share, audio playback with pause and resume.",
               },
               {
-                phase: "Phase 2: Voice & Multilingual Intelligence",
-                status: "Completed ✅",
+                phase: "Phase 2: Voice Chanting and Hindi Responses",
+                status: "Done",
                 statusClass: "bg-green-500/15 text-green-700 border-green-500/30",
-                desc: "Real-time live voice Japa Mala counter with phrase tokenization (13 chants = 13 counts), sacred chant target pills, Hindi/Hinglish intent matcher.",
+                desc: "Live voice Japa mala counter with accurate pairs (13 chants = 13 beads), sacred chant picker, natural Hindi replies.",
               },
               {
-                phase: "Phase 3: Autonomous Spiritual Research Agent",
-                status: "Next Priority 🚀",
+                phase: "Phase 3: AI Story Finder (Old Books)",
+                status: "Next Priority",
                 statusClass: "bg-saffron/20 text-saffron border-saffron/40",
-                desc: "Automated ingestion pipeline for out-of-print memoirs (Miracle of Love, Dada Mukerjee, LSR audio) with strict 4-point provenance verification.",
+                desc: "Build the automated research tool to read out-of-print devotee books and add 365 verified daily miracle stories.",
               },
               {
-                phase: "Phase 4: Backend Security & Production Deploy",
-                status: "Ready for Vercel 📦",
+                phase: "Phase 4: Public Launch and Mobile App",
+                status: "Ready for Vercel",
                 statusClass: "bg-blue-500/15 text-blue-700 border-blue-500/30",
-                desc: "Deploy serverless proxy on Vercel/Cloudflare, connect custom domain, package offline PWA for devotee smartphones.",
+                desc: "Connect to live custom domain, deploy on Vercel, and create an installable mobile app (PWA) for phones.",
               },
             ].map((p, idx) => (
-              <div key={idx} className="glass-card rounded-2xl p-4 border border-marigold/30">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="font-display text-sm font-semibold text-foreground-deep">{p.phase}</h4>
-                  <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${p.statusClass}`}>
+              <div key={idx} className="glass-card rounded-xl p-3.5 border border-marigold/30">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <h4 className="font-display text-xs sm:text-sm font-semibold text-foreground-deep">{p.phase}</h4>
+                  <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${p.statusClass}`}>
                     {p.status}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{p.desc}</p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{p.desc}</p>
               </div>
             ))}
           </div>
@@ -1455,7 +1437,7 @@ export function ProposalModal({ open, onClose }: { open: boolean; onClose: () =>
         {/* Footer Note */}
         <div className="pt-2 text-center border-t border-marigold/20">
           <p className="text-[11px] text-muted-foreground">
-            🙏 <em>"Sub Ek — Love Everyone, Serve Everyone, Remember God"</em> • Kainchi Dham & Vrindavan Ashram Spirit
+            🙏 <em>Sub Ek: Love Everyone, Serve Everyone, Remember God</em> (Kainchi Dham and Vrindavan Ashram Spirit)
           </p>
         </div>
       </div>
@@ -1463,60 +1445,53 @@ export function ProposalModal({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
-const PROPOSAL_RAW_MD = `# 🌸 Maharaj-ji Speaks: Proposal for Growth, Wisdom & Transformation
-*A Comprehensive Roadmap to Make the Platform Robust, Secure, Culturally Authentic, and Deeply Comforting for Devotees Worldwide*
+const PROPOSAL_RAW_MD = `# Maharaj-ji Speaks: Project Plan & Roadmap
 
----
+## 1. Why This Website Exists
+This website is built for people who love Neem Karoli Baba (Maharaj-ji). In times of worry, loneliness, or searching for answers, visitors can find peace, warmth, and simple guidance: Love Everyone, Serve Everyone, Remember God.
 
-## 📌 1. Purpose & Vision
-The platform maharaji-speaks is far more than a typical AI application; it is a digital sanctuary for seekers and devotees in the sacred spirit of Neem Karoli Baba (Maharaj-ji). In times of anxiety, loneliness, or spiritual searching, visitors come seeking fatherly warmth, solace, and timeless wisdom (Sub Ek — Love Everyone, Serve Everyone, Remember God).
+We want to make this platform:
+1. Full of fresh stories: using an AI story finder to read old devotee books.
+2. Hands-free: count Japa mala beads live using your voice.
+3. 100% Free and Fast: no user ever needs an API key or account.
+4. Natural language: understanding Hindi and Hinglish warmly.
 
-This document outlines an actionable roadmap incorporating:
-1. Autonomous & Ever-Expanding in Wisdom (via an authentic AI Research Agent)
-2. Deeply Interactive & Devotional (Voice-activated Japa Mala, audio suite, daily prasad)
-3. 100% Free, Secure & Lightning Fast (Zero API keys needed by users, serverless gateway)
-4. Culturally & Linguistically Native (Natural Hindi/Hinglish understanding and voice)
+## 2. Key Features
 
----
+### Feature 1: AI Story Finder (Searching Old Books for Real Stories)
+- Baba never wrote books himself, but devotees like Ram Dass and Dada Mukerjee recorded hundreds of real memories and miracles in old books.
+- The AI story finder reads verified books (like Miracle of Love) and finds authentic stories.
+- Fact check: checks the devotee name, place, and year (1930 to 1973) so it never makes anything up.
+- Result: gives people a fresh real story every single morning.
 
-## 🌟 2. Key Features & New Proposals
+### Feature 2: Voice-Activated Japa Mala Counter
+- Chant aloud (Ram Ram, Sita Ram, Om Namah Shivaya) and the beads increment live on your phone.
+- Accurate counts: saying 'Ram Ram' 13 times counts as exactly 13 beads.
+- Works live: counts immediately as you speak without waiting for silence.
+- Peaceful sounds: soft wooden click on each bead, and a temple bell on bead 108.
 
-### A. 🧠 Autonomous Spiritual Research Agent ("Lila & Vani Seeker")
-- Historical Indexing: Parses authentic devotee literature (Miracle of Love, Dada Mukerjee diaries, Love Everyone, Love Serve Remember audio transcripts).
-- 4-Point Provenance Gate: Devotee Name, Location, 1930s–1973 Timeline, Core Virtue (Zero Hallucinations).
-- Automated Knowledge Expansion: Populates 365 daily lilas so every day of the year has an authentic teaching.
+### Feature 3: Natural Hindi Replies
+- When users type in conversational Hinglish ('baba mujhe shanti chahiye'), Baba replies in gentle Hindi ('beta, chinta mat karo').
 
-### B. 📿 Voice-Activated Hands-Free Japa Mala Counter
-- Live Real-Time Counting: Ticks beads live as the user speaks.
-- Phrase Tokenization: "Ram Ram" counted in pairs so 13 chants = exactly 13 counts.
-- Multi-Mantra Target Pills: Ram Ram, Sita Ram, Ram Single, Shiva, Hare Krishna, Auto.
-- Acoustic Feedback: Wood chime sound on bead increment + 528Hz Solfeggio bell on 108.
+### Feature 4: Audio Playback
+- Listen, Pause, Resume, and Stop controls for blessings and stories.
 
-### C. 🇮🇳 Native Hindi & Hinglish Auto-Detection
-- Recognizes conversational Hinglish ("Mujhe shanti chahiye") and responds in warm fatherly Hindi.
+### Feature 5: Morning Prasad with WhatsApp Share
+- One meaningful thought each morning that users can share with family on WhatsApp with one click.
 
-### D. 🔊 Full Audio Playback Suite
-- Complete Listen, Pause, Resume, and Stop controls across chat and daily prasad.
+### Feature 6: Family Memories Portal
+- Families in Uttarakhand and UP can submit oral memories of Baba so they are preserved.
 
-### E. 🌸 Single Daily Prasad & Social Blessing Sharing
-- One daily synchronized reading with one-click WhatsApp/SMS sharing.
+## 3. How It Works (Fast, Secure, Near $0 Cost)
+- No user needs to pay or enter an API key.
+- Fast free-tier hosting (Groq AI and Vercel) keeps running costs near zero dollars per month.
+- Large font mode (Bada Akshar) is available for elderly family members.
 
-### F. 🕊️ Community Lila Contribution & Verification Portal
-- Preserves oral family accounts from Uttarakhand & UP with Research Agent verification.
-
----
-
-## 🛠️ 3. Security, Cost & Architecture Upgrades
-- Zero Secret Exposure: Serverless proxy hides API keys.
-- Cost Optimization: ~$0/month operational expense with edge caching.
-- Elder Accessibility: Bada Akshar font scaling, high-contrast, screen-reader support.
-
----
-
-## 📅 4. Implementation Phasing
-- Phase 1: UI Polish & Core Experience (COMPLETED ✅)
-- Phase 2: Voice & Language Intelligence (COMPLETED ✅)
-- Phase 3: Autonomous Research Agent (NEXT 🚀)
-- Phase 4: Backend Security & Production Deploy (READY 📦)
+## 4. Project Roadmap
+- Phase 1 (Done): Clean layout, morning teaching, WhatsApp share, audio controls.
+- Phase 2 (Done): Live voice Japa counter, chant picker, natural Hindi replies.
+- Phase 3 (Next): Connect the AI story finder to old devotee books for 365 daily stories.
+- Phase 4 (Final): Launch on custom website domain and installable phone app (PWA).
 `;
+
 

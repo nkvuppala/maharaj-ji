@@ -25,14 +25,14 @@ export const SUGGESTIONS = [
 /** Daily Quotes from Neem Karoli Baba */
 export const PRASAD_QUOTES = [
   "Love everyone, serve everyone, remember God, and tell the truth.",
-  "Sub Ek — All is One. The same light shines in every heart, so there is no one who is not your own.",
-  "Peace is not something you go looking for outside, beta. It is what remains when you quiet the mind. Sit quietly, chant Ram, and feel — I am there.",
+  "Sub Ek: All is One. The same light shines in every heart, so there is no one who is not your own.",
+  "Peace is not something you go looking for outside, beta. It is what remains when you quiet the mind. Sit quietly, chant Ram, and know that I am always there.",
   "Attachment and aversion are the two ropes that bind us. Cut both with love, and you are free.",
   "Don't try to be a big man. Try to be a true man. Serve quietly, and let God do the advertising.",
   "Love is the strongest medicine in the world. It heals the giver before it heals the receiver.",
   "Do your duty with love, and leave the results to God. What can fear give you? Nothing. What can faith give you? Everything.",
-  "The best way to find God is to love all, serve all, and feed all — and keep repeating His name.",
-  "Never throw banana peels — see divinity in everything. Nothing in God's creation is waste.",
+  "The best way to find God is to love all, serve all, and feed all, and keep repeating His name.",
+  "Never throw banana peels: see divinity in everything. Nothing in God's creation is waste.",
   "When you see God in everyone, forgiveness becomes natural. Forgive others not for their sake, but for your own peace.",
 ];
 
@@ -70,7 +70,7 @@ export const PRASAD_STORIES: PrasadStory[] = [
     title: "The Blanket of Bullets",
     location: "Bhavania Ashram",
     story:
-      "During World War II, a devotee's son was fighting on the battlefield. Back in India, Maharaj-ji suddenly began sweating, groaning, and clutching his thick wool blanket tightly around himself all night as if under fire. In the morning, Baba tossed the blanket down—heavy lead bullets fell out onto the floor, while Baba remained completely unharmed. Days later, a letter arrived: the devotee's son reported that while his entire unit fell, an unseen shield had shielded him from direct machine-gun fire.",
+      "During World War II, a devotee's son was fighting on the battlefield. Back in India, Maharaj-ji suddenly began sweating, groaning, and clutching his thick wool blanket tightly around himself all night as if under fire. In the morning, Baba tossed the blanket down; heavy lead bullets fell out onto the floor, while Baba remained completely unharmed. Days later, a letter arrived: the devotee's son reported that while his entire unit fell, an unseen shield had shielded him from direct machine-gun fire.",
     moral: "A saint's grace knows no physical boundaries or distances.",
   },
   {
@@ -125,7 +125,7 @@ export const EMBEDDED_VIDEOS: VideoMedia[] = [
   },
   {
     id: "r4GNBw5cu8c",
-    title: "Moved by Grace — The Story of Maharaj-ji",
+    title: "Moved by Grace: The Story of Maharaj-ji",
     blurb: "Heartwarming documentary featuring devotees whose lives blossomed forever upon meeting Baba.",
     category: "documentary",
     speaker: "Devotee Interviews & Ram Dass",
@@ -341,7 +341,7 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
   // Inner peace & anxiety
   if (query.includes("shanti") || query.includes("peace") || query.includes("calm") || query.includes("quiet") || query.includes("sukoon")) {
     if (isHindi) {
-      return "शांति बाहर खोजने से नहीं मिलती, बेटा। जब मन की भागदौड़ शांत होती है, तब शांति अपने आप प्रकट होती है। आंखें बंद करो, 'राम' नाम लो, और जानो — मैं सदा तुम्हारे पास हूँ। 🙏";
+      return "शांति बाहर खोजने से नहीं मिलती, बेटा। जब मन की भागदौड़ शांत होती है, तब शांति अपने आप प्रकट होती है। आंखें बंद करो, 'राम' नाम लो, और जानो कि मैं सदा तुम्हारे पास हूँ। 🙏";
     }
     return "Peace is not something you find by running to the mountains, my child. It is already within you. When you quiet the noisy mind and chant Ram, peace remains. Sit quietly. I am right here with you. 🙏";
   }
@@ -349,9 +349,9 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
   // Hurt / Forgiveness / Love
   if (query.includes("hurt") || query.includes("love") || query.includes("forgive") || query.includes("enemy") || query.includes("prem") || query.includes("maaf") || query.includes("gussa")) {
     if (isHindi) {
-      return "बेटा, जो तुम्हें दुख देता है, वह भी कष्ट में है। उनके कर्मों को मत देखो, उनके भीतर बैठे भगवान को देखो। क्षमा करो — उनके लिए नहीं, अपनी आत्मा की शांति के लिए। सबको प्रेम करो, सब एक है। 🙏";
+      return "बेटा, जो तुम्हें दुख देता है, वह भी कष्ट में है। उनके कर्मों को मत देखो, उनके भीतर बैठे भगवान को देखो। क्षमा करो, उनके लिए नहीं, अपनी आत्मा की शांति के लिए। सबको प्रेम करो, सब एक है। 🙏";
     }
-    return "The one who hurts you is also suffering, my child. See their pain, not their actions. When you see God in everyone, love becomes effortless. Forgive — not for their sake, but for your own peace. Sub Ek. 🙏";
+    return "The one who hurts you is also suffering, my child. See their pain, not their actions. When you see God in everyone, love becomes effortless. Forgive, not for their sake, but for your own peace. Sub Ek. 🙏";
   }
 
   // Fear / Worry / Job / Career / Chinta
@@ -375,7 +375,7 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
     if (isHindi) {
       return "कैंची धाम वह पावन भूमि है जहां की ठंडी हवाओं में राम-नाम गूंजता है। हनुमान जी वहां साक्षात विराजमान हैं, जो सच्चे मन से पुकारने वाले हर भक्त का भार अपने ऊपर ले लेते हैं। कभी कैंची आओ बेटा, बाबा का आशीर्वाद सदा तुम्हारे साथ है। 🙏";
     }
-    return "Kainchi Dham is a sacred pocket between the green hills of Kumaon where the cold mountain river whispers Ram Nam. Hanuman Ji sits there with immense tenderness, removing every burden from the devotee who calls on Him with a pure heart. Have faith — His grace is never delayed. 🙏";
+    return "Kainchi Dham is a sacred pocket between the green hills of Kumaon where the cold mountain river whispers Ram Nam. Hanuman Ji sits there with immense tenderness, removing every burden from the devotee who calls on Him with a pure heart. Have faith: His grace is never delayed. 🙏";
   }
 
   // Meaning of life / Purpose
@@ -389,9 +389,9 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
   // Ram Nam / Chanting
   if (query.includes("ram") || query.includes("mantra") || query.includes("chant") || query.includes("naam") || query.includes("japa")) {
     if (isHindi) {
-      return "मुख में सदा भगवान का नाम रखो, बेटा। राम, राम, राम — चलते, फिरते, खाते, काम करते हुए जपते रहो। राम नाम सारे संशयों और दुखों को हर लेता है। 🙏";
+      return "मुख में सदा भगवान का नाम रखो, बेटा। राम, राम, राम... चलते, फिरते, खाते, काम करते हुए जपते रहो। राम नाम सारे संशयों और दुखों को हर लेता है। 🙏";
     }
-    return "Keep God's name on your lips always, my child. Ram, Ram, Ram — repeat it while walking, eating, or working. Slowly, the Holy Name dissolves every anxiety and becomes your constant protector. 🙏";
+    return "Keep God's name on your lips always, my child. Ram, Ram, Ram... repeat it while walking, eating, or working. Slowly, the Holy Name dissolves every anxiety and becomes your constant protector. 🙏";
   }
 
   // 3. Fallbacks by language

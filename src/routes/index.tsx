@@ -9,17 +9,17 @@ import { useEffect, useRef, useState } from "react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Maharaj-ji Speaks • Sub Ek — Love, Serve, Remember" },
+      { title: "Maharaj-ji Speaks • Sub Ek: Love, Serve, Remember" },
       {
         name: "description",
         content:
-          "A warm, prayerful conversational companion in the spirit of Neem Karoli Baba — ask with love, receive a blessing. Hanuman Chalisa, japa counter, photo darshan and more.",
+          "A warm, prayerful conversational companion in the spirit of Neem Karoli Baba: ask with love, receive a blessing. Hanuman Chalisa, japa counter, photo darshan and more.",
       },
       { property: "og:title", content: "Maharaj-ji Speaks • Sub Ek" },
       {
         property: "og:description",
         content:
-          "Step into a peaceful digital sanctuary — converse with a companion in the spirit of Neem Karoli Baba, with daily prasad, japa counter and photo darshan.",
+          "Step into a peaceful space to converse with a companion in the spirit of Neem Karoli Baba, with daily prasad, japa counter and photo darshan.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
