@@ -1,5 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpenText, Camera, Clapperboard, ExternalLink, Heart, Mic, MicOff, Play, RotateCcw, Sparkles, Volume2, X } from "lucide-react";
+import {
+  BookOpenText,
+  Camera,
+  Clapperboard,
+  ExternalLink,
+  Heart,
+  Mic,
+  MicOff,
+  Play,
+  RotateCcw,
+  Sparkles,
+  Volume2,
+  X,
+  FileText,
+  Download,
+  Check,
+  ShieldCheck,
+  Layers,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
 import {
   CHALISA_LYRICS,
   EMBEDDED_VIDEOS,
@@ -1042,3 +1062,461 @@ export function SettingsSheet({
     </Overlay>
   );
 }
+
+/* ---------- Proposal & Demo Roadmap Modal ---------- */
+
+export function ProposalModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"vision" | "features" | "architecture" | "roadmap">("features");
+  const [copied, setCopied] = useState(false);
+
+  const copyProposal = async () => {
+    try {
+      await navigator.clipboard.writeText(PROPOSAL_RAW_MD);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {}
+  };
+
+  const downloadProposal = () => {
+    try {
+      const blob = new Blob([PROPOSAL_RAW_MD], { type: "text/markdown;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Maharajji-Speaks-Proposal.md";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {}
+  };
+
+  return (
+    <Overlay open={open} onClose={onClose} wide={true}>
+      <SheetHeader
+        title="Project Proposal & Roadmap"
+        subtitle="Maharaj-ji Speaks • Vision, AI Research Agent, Japa Voice & Architecture"
+        onClose={onClose}
+      />
+
+      <div className="overflow-y-auto px-6 py-5 max-h-[80vh] space-y-6">
+        {/* Banner with Actions */}
+        <div className="glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-3xl p-4 border border-saffron/40 bg-gradient-to-r from-saffron/10 via-amber-glow/20 to-marigold/10 shadow-sm">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-saffron text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase shadow-xs">
+                Official Proposal
+              </span>
+              <span className="text-xs font-semibold text-foreground-deep">Executive Roadmap Document</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Prepared for presentation & stakeholders. Temporary demo tab.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyProposal}
+              className="flex items-center gap-1.5 rounded-full border border-marigold/40 bg-secondary px-3.5 py-1.5 text-xs font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <FileText className="h-3.5 w-3.5" />}
+              {copied ? "Copied! ✨" : "Copy Markdown"}
+            </button>
+            <button
+              onClick={downloadProposal}
+              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-saffron to-terracotta px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow transition-transform hover:scale-105 active:scale-95"
+            >
+              <Download className="h-3.5 w-3.5" /> Download .md
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap items-center justify-center gap-2 border-b border-marigold/20 pb-3">
+          {[
+            { id: "vision", label: "🌸 Vision & Purpose" },
+            { id: "features", label: "🧠 Key Features & Agent" },
+            { id: "architecture", label: "🛠️ Architecture & Security" },
+            { id: "roadmap", label: "📅 Implementation Phasing" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id as any)}
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                activeTab === t.id
+                  ? "bg-saffron text-white shadow-md shadow-saffron/20"
+                  : "bg-secondary text-walnut hover:bg-amber-glow hover:text-primary"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab 1: Vision & Purpose */}
+        {activeTab === "vision" && (
+          <div className="space-y-4">
+            <div className="parchment-scroll rounded-3xl p-5 border border-marigold/30">
+              <h3 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
+                <span>🕊️</span> Digital Sanctuary vs. Commercial Chatbot
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                The platform is far more than an AI app; it is a <strong>digital sanctuary</strong> in the sacred spirit
+                of <strong>Neem Karoli Baba (Maharaj-ji)</strong>. In moments of anxiety, loneliness, or spiritual searching,
+                devotees arrive seeking warmth, solace, and timeless wisdom: <em>Sub Ek — Love Everyone, Serve Everyone, Remember God</em>.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <span className="text-xl">🌟</span>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Autonomous Wisdom</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Never running out of lilas by deploying an AI Research Agent that studies verified memoirs and Kainchi historical records.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <span className="text-xl">📿</span>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Hands-Free Devotion</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Real-time live voice recognition that turns speech into 108 mala counting without touching or looking at screens.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <span className="text-xl">⚡</span>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">100% Free & Lightning Fast</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Zero friction. Devotees never need API keys; serverless proxy caching keeps operational expense at ~$0.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <span className="text-xl">🇮🇳</span>
+                <h4 className="font-display text-sm font-semibold text-foreground-deep mt-1">Culturally Native</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Seamless Hindi/Hinglish understanding and Indian voice synthesis honoring the authentic tone of Maharaj-ji.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Key Features & Proposals */}
+        {activeTab === "features" && (
+          <div className="space-y-4">
+            {/* Feature 1: Autonomous Research Agent */}
+            <div className="glass-card rounded-3xl p-5 border border-saffron/40 relative overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
+                  <span>🧠</span> Autonomous Spiritual Research Agent ("Lila & Vani Seeker")
+                </h4>
+                <span className="rounded-full bg-saffron/20 border border-saffron/40 px-2.5 py-0.5 text-[11px] font-bold text-saffron">
+                  User-Pitched Core Feature
+                </span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-foreground/90 leading-relaxed">
+                Maharaj-ji never wrote formal books; his teachings live in oral testimonies, devotee memoirs, and ashram diaries.
+                The Autonomous Research Agent continuously discovers, authenticates, and indexes new stories:
+              </p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">1. Historical Archive</span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Indexes *Miracle of Love* (Ram Dass), Dada Mukerjee diaries, Parvati Markus interviews, and Kainchi bulletins.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">2. 4-Point Provenance Gate</span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Strict verification (Devotee Name, Location, 1930s-1973 Timeline, Core Virtue) to eliminate hallucinations.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-secondary/70 p-3 border border-marigold/20">
+                  <span className="text-xs font-bold text-terracotta block">3. 365-Day Expansion</span>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Populates daily prasad stories so every day of the year has an authentic, distinct miracle account.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2: Voice-Activated Hands-Free Japa Mala */}
+            <div className="glass-card rounded-3xl p-5 border border-marigold/40">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="font-display text-base font-semibold text-foreground-deep flex items-center gap-2">
+                  <span>📿</span> Voice-Activated Japa Mala Counter (Live Chanting)
+                </h4>
+                <span className="rounded-full bg-green-500/15 border border-green-500/40 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
+                  Live in Demo ✅
+                </span>
+              </div>
+              <p className="mt-2 text-xs sm:text-sm text-foreground/90 leading-relaxed">
+                Devotees chant aloud naturally (*"Ram Ram"*, *"Sita Ram"*, *"Om Namah Shivaya"*). The counter increments
+                accurately and live as words are spoken, without waiting for pauses.
+              </p>
+              <ul className="mt-2.5 space-y-1.5 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
+                  <strong>Phrase-Aware Pairing:</strong> Chanting "Ram Ram" 13 times counts as exactly 13 beads (not 26 or 28).
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
+                  <strong>Target Selector:</strong> Select between Ram Ram (Pair), Sita Ram, Ram (Single), Shiva, Hare Krishna, or Auto.
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-saffron shrink-0" />
+                  <strong>Wood-Chime & 528Hz Bell:</strong> Instant acoustic feedback on each bead; Solfeggio temple bell on 108.
+                </li>
+              </ul>
+            </div>
+
+            {/* Features 3 & 4 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🇮🇳 Native Hindi & Hinglish</h5>
+                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Colloquial Hinglish queries ("Mujhe shanti chahiye") auto-trigger warm fatherly Hindi replies ("बेटा...").
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🔊 Full Audio Playback Suite</h5>
+                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Listen, Pause, Resume, and Stop controls across both chat blessings and Daily Prasad readings.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🌸 Single Prasad & WhatsApp Share</h5>
+                  <span className="text-[10px] font-bold text-green-700 bg-green-500/10 px-2 py-0.5 rounded-full">Live ✅</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  One daily teaching synchronized to the calendar day with instant WhatsApp / SMS sharing.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <div className="flex items-center justify-between">
+                  <h5 className="font-display text-sm font-semibold text-foreground-deep">🕊️ Community Lila Submission</h5>
+                  <span className="text-[10px] font-bold text-saffron bg-saffron/10 px-2 py-0.5 rounded-full">Phase 3</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Portal for families in Uttarakhand/UP to submit undocumented memories for automated agent verification.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Architecture & Security */}
+        {activeTab === "architecture" && (
+          <div className="space-y-4">
+            <div className="parchment-scroll rounded-3xl p-5 border border-marigold/30">
+              <h3 className="font-display text-base font-semibold text-foreground-deep mb-3 flex items-center gap-2">
+                <span>🛠️</span> System Flow & Gateway Architecture
+              </h3>
+
+              {/* Visual Architecture Flow */}
+              <div className="rounded-2xl bg-walnut/5 p-4 border border-marigold/20 font-mono text-xs space-y-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
+                    📱 Devotee Browser
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-saffron/15 px-3 py-1.5 border border-saffron/40 font-semibold text-saffron">
+                    ☁️ Vercel / Cloudflare CDN
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
+                    ⚛️ React 19 UI
+                  </span>
+                </div>
+
+                <div className="my-2 text-center text-muted-foreground">⇣</div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                  <span className="rounded-lg bg-amber-glow/60 px-3 py-1.5 border border-marigold/40 font-semibold text-walnut">
+                    📖 Local Wisdom Engine (Offline)
+                  </span>
+                  <span className="text-saffron font-bold">⇄</span>
+                  <span className="rounded-lg bg-terracotta/15 px-3 py-1.5 border border-terracotta/40 font-semibold text-terracotta">
+                    🔒 Serverless Gateway (Hidden Key)
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
+                    🤖 Groq LLaMA-3.3 70B
+                  </span>
+                </div>
+
+                <div className="my-2 text-center text-muted-foreground">⇣ (Autonomous Pipeline)</div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2 text-center">
+                  <span className="rounded-lg bg-saffron/20 px-3 py-1.5 border border-saffron/40 font-semibold text-saffron">
+                    📚 Memoir Archives
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-white px-3 py-1.5 shadow-xs border border-marigold/30 font-semibold text-foreground-deep">
+                    🔍 Research Agent
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-green-500/15 px-3 py-1.5 border border-green-500/40 font-semibold text-green-800">
+                    🛡️ Provenance Gate
+                  </span>
+                  <span className="text-saffron font-bold">➔</span>
+                  <span className="rounded-lg bg-amber-glow/60 px-3 py-1.5 border border-marigold/40 font-semibold text-walnut">
+                    365+ Daily Lilas
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-green-600" /> Zero Secret Exposure
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  All AI completions are shielded behind a serverless proxy route (`/api/chat`). Devotees never enter API keys.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-saffron" /> Cost Optimization
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Compact 150-token system prompts and edge caching keep monthly operational expenses near $0.
+                </p>
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <h4 className="font-display text-sm font-semibold text-foreground-deep flex items-center gap-1.5">
+                  <Heart className="h-4 w-4 text-terracotta" /> Elder Accessibility
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Bada Akshar (large fonts), high contrast, and screen-reader accessibility for elderly devotees.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Roadmap & Phasing */}
+        {activeTab === "roadmap" && (
+          <div className="space-y-3.5">
+            {[
+              {
+                phase: "Phase 1: UI Polish & Core Experience",
+                status: "Completed ✅",
+                statusClass: "bg-green-500/15 text-green-700 border-green-500/30",
+                desc: "Saffron sanctuary layout, perfectly aligned cards, single daily prasad, WhatsApp share, full audio playback controls (Listen/Pause/Resume/Stop).",
+              },
+              {
+                phase: "Phase 2: Voice & Multilingual Intelligence",
+                status: "Completed ✅",
+                statusClass: "bg-green-500/15 text-green-700 border-green-500/30",
+                desc: "Real-time live voice Japa Mala counter with phrase tokenization (13 chants = 13 counts), sacred chant target pills, Hindi/Hinglish intent matcher.",
+              },
+              {
+                phase: "Phase 3: Autonomous Spiritual Research Agent",
+                status: "Next Priority 🚀",
+                statusClass: "bg-saffron/20 text-saffron border-saffron/40",
+                desc: "Automated ingestion pipeline for out-of-print memoirs (Miracle of Love, Dada Mukerjee, LSR audio) with strict 4-point provenance verification.",
+              },
+              {
+                phase: "Phase 4: Backend Security & Production Deploy",
+                status: "Ready for Vercel 📦",
+                statusClass: "bg-blue-500/15 text-blue-700 border-blue-500/30",
+                desc: "Deploy serverless proxy on Vercel/Cloudflare, connect custom domain, package offline PWA for devotee smartphones.",
+              },
+            ].map((p, idx) => (
+              <div key={idx} className="glass-card rounded-2xl p-4 border border-marigold/30">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="font-display text-sm font-semibold text-foreground-deep">{p.phase}</h4>
+                  <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${p.statusClass}`}>
+                    {p.status}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer Note */}
+        <div className="pt-2 text-center border-t border-marigold/20">
+          <p className="text-[11px] text-muted-foreground">
+            🙏 <em>"Sub Ek — Love Everyone, Serve Everyone, Remember God"</em> • Kainchi Dham & Vrindavan Ashram Spirit
+          </p>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
+
+const PROPOSAL_RAW_MD = `# 🌸 Maharaj-ji Speaks: Proposal for Growth, Wisdom & Transformation
+*A Comprehensive Roadmap to Make the Platform Robust, Secure, Culturally Authentic, and Deeply Comforting for Devotees Worldwide*
+
+---
+
+## 📌 1. Purpose & Vision
+The platform maharaji-speaks is far more than a typical AI application; it is a digital sanctuary for seekers and devotees in the sacred spirit of Neem Karoli Baba (Maharaj-ji). In times of anxiety, loneliness, or spiritual searching, visitors come seeking fatherly warmth, solace, and timeless wisdom (Sub Ek — Love Everyone, Serve Everyone, Remember God).
+
+This document outlines an actionable roadmap incorporating:
+1. Autonomous & Ever-Expanding in Wisdom (via an authentic AI Research Agent)
+2. Deeply Interactive & Devotional (Voice-activated Japa Mala, audio suite, daily prasad)
+3. 100% Free, Secure & Lightning Fast (Zero API keys needed by users, serverless gateway)
+4. Culturally & Linguistically Native (Natural Hindi/Hinglish understanding and voice)
+
+---
+
+## 🌟 2. Key Features & New Proposals
+
+### A. 🧠 Autonomous Spiritual Research Agent ("Lila & Vani Seeker")
+- Historical Indexing: Parses authentic devotee literature (Miracle of Love, Dada Mukerjee diaries, Love Everyone, Love Serve Remember audio transcripts).
+- 4-Point Provenance Gate: Devotee Name, Location, 1930s–1973 Timeline, Core Virtue (Zero Hallucinations).
+- Automated Knowledge Expansion: Populates 365 daily lilas so every day of the year has an authentic teaching.
+
+### B. 📿 Voice-Activated Hands-Free Japa Mala Counter
+- Live Real-Time Counting: Ticks beads live as the user speaks.
+- Phrase Tokenization: "Ram Ram" counted in pairs so 13 chants = exactly 13 counts.
+- Multi-Mantra Target Pills: Ram Ram, Sita Ram, Ram Single, Shiva, Hare Krishna, Auto.
+- Acoustic Feedback: Wood chime sound on bead increment + 528Hz Solfeggio bell on 108.
+
+### C. 🇮🇳 Native Hindi & Hinglish Auto-Detection
+- Recognizes conversational Hinglish ("Mujhe shanti chahiye") and responds in warm fatherly Hindi.
+
+### D. 🔊 Full Audio Playback Suite
+- Complete Listen, Pause, Resume, and Stop controls across chat and daily prasad.
+
+### E. 🌸 Single Daily Prasad & Social Blessing Sharing
+- One daily synchronized reading with one-click WhatsApp/SMS sharing.
+
+### F. 🕊️ Community Lila Contribution & Verification Portal
+- Preserves oral family accounts from Uttarakhand & UP with Research Agent verification.
+
+---
+
+## 🛠️ 3. Security, Cost & Architecture Upgrades
+- Zero Secret Exposure: Serverless proxy hides API keys.
+- Cost Optimization: ~$0/month operational expense with edge caching.
+- Elder Accessibility: Bada Akshar font scaling, high-contrast, screen-reader support.
+
+---
+
+## 📅 4. Implementation Phasing
+- Phase 1: UI Polish & Core Experience (COMPLETED ✅)
+- Phase 2: Voice & Language Intelligence (COMPLETED ✅)
+- Phase 3: Autonomous Research Agent (NEXT 🚀)
+- Phase 4: Backend Security & Production Deploy (READY 📦)
+`;
+
