@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BookOpenText, Camera, Clapperboard, ExternalLink, Heart, Play, RotateCcw, Sparkles, Volume2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpenText, Camera, Clapperboard, ExternalLink, Heart, Mic, MicOff, Play, RotateCcw, Sparkles, Volume2, X } from "lucide-react";
 import {
   CHALISA_LYRICS,
   EMBEDDED_VIDEOS,
@@ -159,21 +159,139 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
   );
 }
 
-/* ---------- Japa Counter (108 beads) ---------- */
+// Sacred Japa chanting patterns (English, phonetic, & Devanagari)
+const JAPA_PATTERN = /\b(ram|rama|raam|sita|seeta|om|aum|shiva|shivaya|shivam|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|राम|सिया|सीता|शिव|कृष्ण|राधे|हरि|हनुमान|ॐ)\b/gi;
 
 export function JapaModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [count, setCount] = useState(0);
-  const complete = count >= 108;
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [lastMantra, setLastMantra] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
-  const countBead = () => {
-    if (complete) return;
-    const next = count + 1;
-    setCount(next);
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate(20);
+  const complete = count >= 108;
+  const lastCountTimeRef = useRef<number>(0);
+  const voiceActiveRef = useRef<boolean>(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    voiceActiveRef.current = voiceActive;
+  }, [voiceActive]);
+
+  useEffect(() => {
+    const SR =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported(!!SR);
+  }, []);
+
+  // Cleanup speech recognition on modal close or unmount
+  useEffect(() => {
+    if (!open && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      setVoiceActive(false);
+      setLastMantra(null);
     }
-    if (next === 108) {
-      playTempleBell();
+  }, [open]);
+
+  const countBead = (amount: number = 1, mantraName?: string) => {
+    setCount((prev) => {
+      if (prev >= 108) return 108;
+      const next = Math.min(prev + amount, 108);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(25);
+      }
+      if (next === 108) {
+        playTempleBell();
+        setVoiceActive(false);
+        try {
+          recognitionRef.current?.stop();
+        } catch {}
+      }
+      return next;
+    });
+
+    if (mantraName) {
+      setLastMantra(mantraName);
+      setTimeout(() => setLastMantra(null), 1800);
+    }
+  };
+
+  const toggleVoiceMode = () => {
+    if (!voiceSupported) {
+      setVoiceError("Voice recognition is not supported in this browser.");
+      return;
+    }
+
+    if (voiceActive) {
+      setVoiceActive(false);
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      return;
+    }
+
+    const SR =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
+    try {
+      const rec = new SR();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "hi-IN"; // Accurately picks up Ram, Om, Sita Ram & Indian accents
+
+      rec.onresult = (event: any) => {
+        let detected = "";
+        let validMatches = 0;
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0]?.transcript || "";
+          const matches = transcript.match(JAPA_PATTERN);
+          if (matches && matches.length > 0) {
+            detected = matches[matches.length - 1];
+            validMatches = matches.length;
+          }
+        }
+
+        // STRICT FALLBACK FILTER:
+        // Only increment if a sacred Japa keyword was detected,
+        // and respect rhythmic human chanting interval (minimum 320ms between counts)
+        if (validMatches > 0) {
+          const now = Date.now();
+          if (now - lastCountTimeRef.current > 320) {
+            lastCountTimeRef.current = now;
+            countBead(1, detected);
+          }
+        }
+      };
+
+      rec.onerror = (e: any) => {
+        if (e.error === "not-allowed") {
+          setVoiceError("Microphone access blocked. Please allow mic permissions.");
+          setVoiceActive(false);
+        }
+      };
+
+      rec.onend = () => {
+        // Auto-reconnect if user still wants voice active and mala is not finished
+        if (voiceActiveRef.current && count < 108) {
+          try {
+            rec.start();
+          } catch {}
+        } else {
+          setVoiceActive(false);
+        }
+      };
+
+      rec.start();
+      recognitionRef.current = rec;
+      setVoiceActive(true);
+      setVoiceError(null);
+    } catch {
+      setVoiceError("Could not start microphone.");
+      setVoiceActive(false);
     }
   };
 
@@ -181,18 +299,27 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
     <Overlay open={open} onClose={onClose}>
       <SheetHeader title="Japa Counter" subtitle="One Mala • 108 Holy Names" onClose={onClose} />
       <div className="overflow-y-auto px-6 py-6">
-        <div className="mx-auto mb-4 text-center">
+        <div className="mx-auto mb-3 text-center">
           <span className="font-display text-5xl font-semibold text-primary">{Math.min(count, 108)}</span>
           <span className="text-lg text-muted-foreground"> / 108</span>
           {complete ? (
             <p className="mt-1 text-sm font-semibold text-terracotta animate-pulse">🙏 108 Mala Complete • Ram Ram Sita Ram</p>
           ) : (
-            <p className="mt-1 text-xs text-muted-foreground">Repeat "Ram Ram" or your Guru Mantra with each tap</p>
+            <p className="mt-1 text-xs text-muted-foreground">Chant "Ram Ram", "Om", or tap beads manually</p>
           )}
         </div>
 
+        {/* Live Chant Detection Pill */}
+        {lastMantra && (
+          <div className="mx-auto mb-3 flex items-center justify-center gap-1.5 animate-bounce">
+            <span className="inline-flex items-center gap-1 rounded-full bg-saffron/15 border border-saffron/40 px-3 py-1 text-xs font-semibold text-saffron">
+              ✨ Chant Detected: “{lastMantra}” (+1)
+            </span>
+          </div>
+        )}
+
         {/* Progress bar */}
-        <div className="mx-auto mb-5 h-2 w-full max-w-sm rounded-full bg-secondary overflow-hidden">
+        <div className="mx-auto mb-4 h-2 w-full max-w-sm rounded-full bg-secondary overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-marigold to-saffron transition-all duration-200"
             style={{ width: `${(Math.min(count, 108) / 108) * 100}%` }}
@@ -201,7 +328,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
 
         {/* Bead mala grid */}
         <button
-          onClick={countBead}
+          onClick={() => countBead(1)}
           aria-label="Count one mantra bead"
           className="parchment-scroll grid w-full cursor-pointer grid-cols-12 gap-2 rounded-3xl p-5 transition-transform active:scale-[0.98]"
         >
@@ -215,19 +342,60 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           ))}
         </button>
 
-        <div className="mt-6 flex items-center justify-center gap-3">
+        {/* Voice Chanting Feature Bar */}
+        <div className="mt-5 parchment-scroll rounded-2xl p-3.5 border border-marigold/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+                  voiceActive
+                    ? "bg-red-500 text-white animate-pulse shadow-md shadow-red-500/30"
+                    : "bg-secondary text-walnut"
+                }`}
+              >
+                {voiceActive ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+              </span>
+              <div>
+                <span className="block text-xs font-semibold text-foreground-deep">
+                  {voiceActive ? "Voice Chanting Active 🎙️" : "Voice Chanting Mode"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {voiceActive ? "Chant 'Ram' or 'Om' aloud to auto-count" : "Auto-increments beads as you chant"}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={toggleVoiceMode}
+              disabled={complete}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                voiceActive
+                  ? "bg-red-500 text-white shadow hover:bg-red-600"
+                  : "bg-secondary text-walnut border border-marigold/40 hover:bg-amber-glow hover:text-primary"
+              }`}
+            >
+              {voiceActive ? "Stop Voice" : "Start Voice"}
+            </button>
+          </div>
+          {voiceError && <p className="mt-2 text-[11px] text-destructive">⚠️ {voiceError}</p>}
+        </div>
+
+        {/* Manual Buttons */}
+        <div className="mt-5 flex items-center justify-center gap-3">
           <button
-            onClick={countBead}
+            onClick={() => countBead(1)}
             disabled={complete}
             className="flex-1 max-w-[180px] rounded-full bg-gradient-to-r from-saffron to-terracotta py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-saffron/30 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
           >
-            {complete ? "Complete" : "Count Bead"}
+            {complete ? "Complete" : "Count Bead (+1)"}
           </button>
           <button
-            onClick={() => setCount(0)}
+            onClick={() => {
+              setCount(0);
+              setLastMantra(null);
+            }}
             className="flex items-center gap-2 rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
           >
-            <RotateCcw className="h-4 w-4" /> New Mala
+            <RotateCcw className="h-4 w-4" /> Reset
           </button>
         </div>
       </div>
