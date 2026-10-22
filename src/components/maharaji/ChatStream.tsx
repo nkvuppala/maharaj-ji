@@ -53,36 +53,78 @@ function renderFormattedText(text: string) {
 
 export default function ChatStream({ messages, typing, onSuggestion }: ChatStreamProps) {
   const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const currentUtterRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const listen = (msg: Message) => {
-    if (!("speechSynthesis" in window)) return;
-    if (speakingId === msg.id) {
+  const stopAudio = () => {
+    if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      setSpeakingId(null);
-      return;
     }
+    setSpeakingId(null);
+    setIsPaused(false);
+    currentUtterRef.current = null;
+  };
+
+  const pauseAudio = () => {
+    if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const resumeAudio = () => {
+    if ("speechSynthesis" in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  };
+
+  const playSpeech = (msg: Message) => {
+    if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
 
     // Clean text for speech
     const clean = msg.text
       .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/[🙏🕉️🌸✨🔔]/g, "")
+      .replace(/[🙏🕉️🌸✨🔔•]/g, "")
       .trim();
 
     const utter = new SpeechSynthesisUtterance(clean);
 
-    // Multilingual speech detection
-    if (/[\u0900-\u097F]/.test(msg.text)) utter.lang = "hi-IN";
-    else if (/[\u0C00-\u0C7F]/.test(msg.text)) utter.lang = "te-IN";
-    else if (/[\u0B80-\u0BFF]/.test(msg.text)) utter.lang = "ta-IN";
-    else utter.lang = "en-IN";
+    // Multilingual speech detection (Hindi / Dev / Tamil / Telugu / Indian English)
+    if (/[\u0900-\u097F]/.test(msg.text)) {
+      utter.lang = "hi-IN";
+    } else if (/[\u0C00-\u0C7F]/.test(msg.text)) {
+      utter.lang = "te-IN";
+    } else if (/[\u0B80-\u0BFF]/.test(msg.text)) {
+      utter.lang = "ta-IN";
+    } else {
+      utter.lang = "en-IN";
+    }
 
     utter.rate = 0.88;
-    utter.pitch = 0.95;
-    utter.onend = () => setSpeakingId(null);
-    utter.onerror = () => setSpeakingId(null);
+    utter.pitch = 0.96;
+
+    utter.onend = () => {
+      setSpeakingId(null);
+      setIsPaused(false);
+      currentUtterRef.current = null;
+    };
+    utter.onerror = () => {
+      setSpeakingId(null);
+      setIsPaused(false);
+      currentUtterRef.current = null;
+    };
+
+    currentUtterRef.current = utter;
     setSpeakingId(msg.id);
+    setIsPaused(false);
     window.speechSynthesis.speak(utter);
+  };
+
+  const restartAudio = (msg: Message) => {
+    stopAudio();
+    setTimeout(() => playSpeech(msg), 60);
   };
 
   const copyQuote = async (msg: Message) => {
@@ -114,11 +156,11 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 pb-56 pt-6 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-48 pt-4 sm:px-6 sm:pt-8 sm:pb-52">
       {messages.length === 0 && !typing && (
-        <section className="rise-in flex flex-col items-center py-8 text-center sm:py-14">
+        <section className="rise-in flex flex-col items-center py-6 text-center sm:py-10">
           {/* Diya */}
-          <div className="halo mb-6 flex h-20 w-20 items-center justify-center rounded-full text-primary">
+          <div className="halo mb-5 flex h-20 w-20 items-center justify-center rounded-full text-primary">
             <DiyaIcon className="h-14 w-14" />
           </div>
 
@@ -129,27 +171,21 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
             What weighs on your heart today?
           </p>
 
-          {/* Parchment suggestion scrolls */}
-          <div className="mt-10 grid w-full gap-3 sm:grid-cols-2">
-            {SUGGESTIONS.map((s, i) => (
+          {/* Parchment suggestion scrolls - perfectly aligned grid */}
+          <div className="mt-8 grid w-full grid-cols-1 gap-3.5 sm:grid-cols-2 items-stretch">
+            {SUGGESTIONS.map((s) => (
               <button
                 key={s.text}
                 onClick={() => onSuggestion(s.text)}
-                className={`parchment-scroll group flex items-start gap-3 rounded-2xl p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                  i % 2 === 1 ? "sm:translate-y-2" : ""
-                }`}
+                className="parchment-scroll group flex h-full items-center gap-3 rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <span className="mt-0.5 shrink-0 text-terracotta transition-colors group-hover:text-primary">
+                <span className="shrink-0 text-terracotta transition-colors group-hover:text-primary">
                   {SUGGESTION_ICONS[s.icon] ?? <LotusIcon className="h-5 w-5" />}
                 </span>
-                <span className="text-sm leading-relaxed text-foreground sm:text-[0.95rem]">{s.text}</span>
+                <span className="text-sm font-medium leading-relaxed text-foreground sm:text-[0.95rem]">{s.text}</span>
               </button>
             ))}
           </div>
-
-          <p className="mt-10 flex items-center gap-2 text-xs tracking-widest text-walnut/60 uppercase">
-            <Feather className="h-3.5 w-3.5" /> Speak or type freely in any language
-          </p>
         </section>
       )}
 
@@ -173,19 +209,52 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
                     {renderFormattedText(m.text)}
                   </div>
                 </div>
-                {/* Micro-actions */}
-                <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-1">
-                  <button
-                    onClick={() => listen(m)}
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-                      speakingId === m.id
-                        ? "bg-secondary text-primary ring-1 ring-marigold"
-                        : "text-walnut/80 hover:bg-secondary hover:text-primary"
-                    }`}
-                  >
-                    {speakingId === m.id ? <WaveBars /> : <Volume2 className="h-3.5 w-3.5" />}
-                    {speakingId === m.id ? "Speaking..." : "Listen"}
-                  </button>
+
+                {/* Voice & action controls */}
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 pl-1">
+                  {speakingId === m.id ? (
+                    <div className="flex items-center gap-1.5 rounded-full bg-secondary/80 p-1 border border-marigold/40">
+                      {isPaused ? (
+                        <button
+                          onClick={resumeAudio}
+                          className="flex items-center gap-1 rounded-full bg-saffron px-3 py-1 text-xs font-semibold text-primary-foreground shadow transition-transform hover:scale-105"
+                          title="Resume speaking"
+                        >
+                          ▶ Resume
+                        </button>
+                      ) : (
+                        <button
+                          onClick={pauseAudio}
+                          className="flex items-center gap-1 rounded-full bg-amber-glow px-3 py-1 text-xs font-semibold text-walnut transition-colors hover:bg-secondary"
+                          title="Pause voice"
+                        >
+                          ⏸ Pause
+                        </button>
+                      )}
+                      <button
+                        onClick={stopAudio}
+                        className="rounded-full px-2.5 py-1 text-xs font-medium text-walnut transition-colors hover:text-destructive"
+                        title="Stop audio"
+                      >
+                        ⏹ Stop
+                      </button>
+                      <button
+                        onClick={() => restartAudio(m)}
+                        className="rounded-full px-2.5 py-1 text-xs font-medium text-walnut transition-colors hover:text-primary"
+                        title="Restart from beginning"
+                      >
+                        🔄 Restart
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => playSpeech(m)}
+                      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-walnut/80 transition-colors hover:bg-secondary hover:text-primary"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" /> Listen
+                    </button>
+                  )}
+
                   <button
                     onClick={() => copyQuote(m)}
                     className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-walnut/80 transition-colors hover:bg-secondary hover:text-primary"

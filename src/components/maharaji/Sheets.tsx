@@ -63,34 +63,114 @@ function SheetHeader({ title, subtitle, onClose }: { title: string; subtitle: st
 
 export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [mode, setMode] = useState<"quote" | "story">("quote");
+  const [speaking, setSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const dayIndex = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
     return Math.floor((now.getTime() - start.getTime()) / 86400000);
   }, []);
-  const [offset, setOffset] = useState(0);
-  const quote = PRASAD_QUOTES[(dayIndex + offset) % PRASAD_QUOTES.length];
-  const story = PRASAD_STORIES[(dayIndex + offset) % PRASAD_STORIES.length];
+
+  const quote = PRASAD_QUOTES[dayIndex % PRASAD_QUOTES.length];
+  const story = PRASAD_STORIES[dayIndex % PRASAD_STORIES.length];
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
 
-  const readAloud = (text: string) => {
+  useEffect(() => {
+    if (!open && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      setIsPaused(false);
+    }
+  }, [open]);
+
+  const stopAudio = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+    setIsPaused(false);
+  };
+
+  const pauseAudio = () => {
+    if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const resumeAudio = () => {
+    if ("speechSynthesis" in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  };
+
+  const readAloud = () => {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
+    const text = mode === "quote" ? quote : `${story.title}. ${story.story} Lesson: ${story.moral}`;
     const utter = new SpeechSynthesisUtterance(text);
+    if (/[\u0900-\u097F]/.test(text)) {
+      utter.lang = "hi-IN";
+    } else {
+      utter.lang = "en-IN";
+    }
     utter.rate = 0.88;
-    utter.pitch = 0.95;
+    utter.pitch = 0.96;
+    utter.onend = () => {
+      setSpeaking(false);
+      setIsPaused(false);
+    };
+    utter.onerror = () => {
+      setSpeaking(false);
+      setIsPaused(false);
+    };
+    setSpeaking(true);
+    setIsPaused(false);
     window.speechSynthesis.speak(utter);
+  };
+
+  const sharePrasad = async () => {
+    const textToShare =
+      mode === "quote"
+        ? `🌸 Daily Prasad from Maharaj-ji:\n“${quote}”\n— Neem Karoli Baba, Sub Ek 🙏`
+        : `✨ Miracle Story (Lila) of Maharaj-ji:\n“${story.title}”\n\n${story.story}\n\nLesson: “${story.moral}”\n— Sub Ek, Love Serve Remember 🙏`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Daily Prasad • Neem Karoli Baba",
+          text: textToShare,
+        });
+        return;
+      }
+    } catch {
+      /* fallback to clipboard */
+    }
+
+    try {
+      await navigator.clipboard.writeText(textToShare);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2400);
+    } catch {
+      /* clipboard blocked */
+    }
   };
 
   return (
     <Overlay open={open} onClose={onClose}>
       <SheetHeader title="Daily Prasad" subtitle={today} onClose={onClose} />
-      
+
       {/* Mode Selector */}
       <div className="flex justify-center border-b border-marigold/20 bg-secondary/30 px-6 py-2.5">
         <div className="inline-flex rounded-full bg-secondary/80 p-1 border border-marigold/30">
           <button
-            onClick={() => setMode("quote")}
+            onClick={() => {
+              stopAudio();
+              setMode("quote");
+            }}
             className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
               mode === "quote"
                 ? "bg-gradient-to-r from-saffron to-terracotta text-primary-foreground shadow"
@@ -100,7 +180,10 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
             🌸 Daily Teaching
           </button>
           <button
-            onClick={() => setMode("story")}
+            onClick={() => {
+              stopAudio();
+              setMode("story");
+            }}
             className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
               mode === "story"
                 ? "bg-gradient-to-r from-saffron to-terracotta text-primary-foreground shadow"
@@ -121,7 +204,9 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
             <blockquote className="parchment-scroll rounded-3xl px-6 py-6 text-center shadow-sm">
               <OmIcon className="mx-auto mb-3 h-5 w-5 text-marigold" />
               <p className="font-display text-lg leading-relaxed text-foreground-deep sm:text-xl">“{quote}”</p>
-              <footer className="mt-4 text-xs font-medium tracking-[0.18em] text-walnut/70 uppercase">— Neem Karoli Baba</footer>
+              <footer className="mt-4 text-xs font-medium tracking-[0.18em] text-walnut/70 uppercase">
+                — Neem Karoli Baba
+              </footer>
             </blockquote>
           </div>
         ) : (
@@ -131,7 +216,9 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
                 <h3 className="font-display text-base font-semibold text-foreground-deep">{story.title}</h3>
                 <span className="text-xs text-muted-foreground">📍 {story.location}</span>
               </div>
-              <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-terracotta">Lila</span>
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-terracotta">
+                Lila
+              </span>
             </div>
             <p className="text-sm leading-relaxed text-foreground/90">{story.story}</p>
             <div className="mt-4 rounded-2xl bg-secondary/60 p-3 border border-marigold/30">
@@ -140,18 +227,46 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {/* Audio & Share Prasad Controls */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+          {speaking ? (
+            <div className="flex items-center gap-1.5 rounded-full bg-secondary/90 p-1 border border-marigold/40">
+              {isPaused ? (
+                <button
+                  onClick={resumeAudio}
+                  className="rounded-full bg-saffron px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow"
+                >
+                  ▶ Resume
+                </button>
+              ) : (
+                <button
+                  onClick={pauseAudio}
+                  className="rounded-full bg-amber-glow px-3 py-1.5 text-xs font-semibold text-walnut"
+                >
+                  ⏸ Pause
+                </button>
+              )}
+              <button
+                onClick={stopAudio}
+                className="rounded-full px-2.5 py-1.5 text-xs font-medium text-walnut hover:text-destructive"
+              >
+                ⏹ Stop
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={readAloud}
+              className="flex items-center gap-1.5 rounded-full border border-marigold/40 bg-secondary px-4 py-2 text-xs font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
+            >
+              <Volume2 className="h-4 w-4" /> Listen
+            </button>
+          )}
+
           <button
-            onClick={() => readAloud(mode === "quote" ? quote : `${story.title}. ${story.story}`)}
-            className="flex items-center gap-1.5 rounded-full border border-marigold/40 bg-secondary px-4 py-2 text-xs font-semibold text-walnut transition-colors hover:bg-amber-glow hover:text-primary"
+            onClick={sharePrasad}
+            className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-saffron to-terracotta px-5 py-2 text-xs font-semibold text-primary-foreground shadow-md shadow-saffron/30 transition-transform hover:scale-105"
           >
-            <Volume2 className="h-4 w-4" /> Listen
-          </button>
-          <button
-            onClick={() => setOffset((o) => o + 1)}
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-saffron to-terracotta px-5 py-2 text-xs font-semibold text-primary-foreground shadow-md shadow-saffron/30 transition-transform hover:scale-105"
-          >
-            <Sparkles className="h-3.5 w-3.5" /> Another Prasad
+            <Heart className="h-3.5 w-3.5" /> {copied ? "Prasad Copied! ✨" : "Share Prasad"}
           </button>
         </div>
       </div>
@@ -160,7 +275,8 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 // Sacred Japa chanting patterns (English, phonetic, & Devanagari)
-const JAPA_PATTERN = /\b(ram|rama|raam|sita|seeta|om|aum|shiva|shivaya|shivam|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|राम|सिया|सीता|शिव|कृष्ण|राधे|हरि|हनुमान|ॐ)\b/gi;
+const JAPA_PATTERN =
+  /\b(ram|rama|raam|sita|seeta|sitaram|siya|om|aum|shiva|shiv|shivaya|shivam|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|jai|जय|राम|सिया|सीता|सीताराम|शिव|कृष्ण|राधे|हरि|हनुमान|ॐ)\b/gi;
 
 export function JapaModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [count, setCount] = useState(0);
@@ -170,9 +286,14 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const complete = count >= 108;
-  const lastCountTimeRef = useRef<number>(0);
+  const countRef = useRef<number>(0);
   const voiceActiveRef = useRef<boolean>(false);
   const recognitionRef = useRef<any>(null);
+  const processedIndexRef = useRef<number>(0);
+
+  useEffect(() => {
+    countRef.current = count;
+  }, [count]);
 
   useEffect(() => {
     voiceActiveRef.current = voiceActive;
@@ -188,8 +309,9 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
   useEffect(() => {
     if (!open && recognitionRef.current) {
       try {
-        recognitionRef.current.stop();
+        recognitionRef.current.abort();
       } catch {}
+      recognitionRef.current = null;
       setVoiceActive(false);
       setLastMantra(null);
     }
@@ -199,6 +321,8 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
     setCount((prev) => {
       if (prev >= 108) return 108;
       const next = Math.min(prev + amount, 108);
+      countRef.current = next;
+
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(25);
       }
@@ -206,32 +330,20 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
         playTempleBell();
         setVoiceActive(false);
         try {
-          recognitionRef.current?.stop();
+          recognitionRef.current?.abort();
         } catch {}
+        recognitionRef.current = null;
       }
       return next;
     });
 
     if (mantraName) {
       setLastMantra(mantraName);
-      setTimeout(() => setLastMantra(null), 1800);
+      setTimeout(() => setLastMantra(null), 1600);
     }
   };
 
-  const toggleVoiceMode = () => {
-    if (!voiceSupported) {
-      setVoiceError("Voice recognition is not supported in this browser.");
-      return;
-    }
-
-    if (voiceActive) {
-      setVoiceActive(false);
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-      return;
-    }
-
+  const startRecognition = () => {
     const SR =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
@@ -240,29 +352,26 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       const rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
-      rec.lang = "hi-IN"; // Accurately picks up Ram, Om, Sita Ram & Indian accents
+      rec.lang = "hi-IN"; // Accurately recognizes sacred Sanskrit/Hindi names in both scripts
 
       rec.onresult = (event: any) => {
-        let detected = "";
-        let validMatches = 0;
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0]?.transcript || "";
-          const matches = transcript.match(JAPA_PATTERN);
-          if (matches && matches.length > 0) {
-            detected = matches[matches.length - 1];
-            validMatches = matches.length;
-          }
-        }
+          const res = event.results[i];
+          const transcript = res[0]?.transcript || "";
 
-        // STRICT FALLBACK FILTER:
-        // Only increment if a sacred Japa keyword was detected,
-        // and respect rhythmic human chanting interval (minimum 320ms between counts)
-        if (validMatches > 0) {
-          const now = Date.now();
-          if (now - lastCountTimeRef.current > 320) {
-            lastCountTimeRef.current = now;
-            countBead(1, detected);
+          if (res.isFinal) {
+            // Definite sentence/phrase finalized
+            const matches = transcript.match(JAPA_PATTERN);
+            if (matches && matches.length > 0) {
+              countBead(matches.length, matches[matches.length - 1]);
+            }
+            processedIndexRef.current = i + 1;
+          } else {
+            // Live interim indicator
+            const interimMatches = transcript.match(JAPA_PATTERN);
+            if (interimMatches && interimMatches.length > 0) {
+              setLastMantra(interimMatches[interimMatches.length - 1]);
+            }
           }
         }
       };
@@ -275,11 +384,13 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       };
 
       rec.onend = () => {
-        // Auto-reconnect if user still wants voice active and mala is not finished
-        if (voiceActiveRef.current && count < 108) {
-          try {
-            rec.start();
-          } catch {}
+        // Reconnect seamlessly if still chanting and below 108
+        if (voiceActiveRef.current && countRef.current < 108) {
+          setTimeout(() => {
+            if (voiceActiveRef.current && countRef.current < 108) {
+              startRecognition();
+            }
+          }, 120);
         } else {
           setVoiceActive(false);
         }
@@ -293,6 +404,25 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       setVoiceError("Could not start microphone.");
       setVoiceActive(false);
     }
+  };
+
+  const toggleVoiceMode = () => {
+    if (!voiceSupported) {
+      setVoiceError("Voice recognition is not supported in this browser.");
+      return;
+    }
+
+    if (voiceActive) {
+      setVoiceActive(false);
+      try {
+        recognitionRef.current?.abort();
+      } catch {}
+      recognitionRef.current = null;
+      return;
+    }
+
+    processedIndexRef.current = 0;
+    startRecognition();
   };
 
   return (
@@ -607,8 +737,6 @@ interface Prefs {
   reduceMotion: boolean;
 }
 
-const KEY_STORE = "maharaji.apiKey";
-
 export function SettingsSheet({
   open,
   onClose,
@@ -622,32 +750,7 @@ export function SettingsSheet({
   onPrefs: (p: Prefs) => void;
   onClearChat: () => void;
 }) {
-  const [apiKey, setApiKey] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    try {
-      setApiKey(localStorage.getItem(KEY_STORE) ?? "");
-    } catch {
-      /* storage unavailable */
-    }
-  }, [open]);
-
   const toggle = (key: keyof Prefs) => onPrefs({ ...prefs, [key]: !prefs[key] });
-
-  const saveKey = () => {
-    try {
-      if (apiKey.trim()) {
-        localStorage.setItem(KEY_STORE, apiKey.trim());
-      } else {
-        localStorage.removeItem(KEY_STORE);
-      }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch {
-      /* storage unavailable */
-    }
-  };
 
   const Toggle = ({ label, description, on, onClick }: { label: string; description: string; on: boolean; onClick: () => void }) => (
     <button onClick={onClick} className="glass-card flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-left transition-colors hover:bg-card/80">
@@ -665,31 +768,6 @@ export function SettingsSheet({
     <Overlay open={open} onClose={onClose}>
       <SheetHeader title="Settings & Accessibility" subtitle="Personalize your sanctuary experience" onClose={onClose} />
       <div className="overflow-y-auto px-6 py-6 space-y-5">
-        {/* API Key management */}
-        <div className="parchment-scroll rounded-3xl p-5">
-          <label className="block text-sm font-semibold text-foreground-deep mb-1">
-            Groq API Key (Optional)
-          </label>
-          <p className="text-xs text-muted-foreground mb-3">
-            Leave blank to use the built-in offline wisdom engine, or paste your own free key from console.groq.com for limitless generative AI.
-          </p>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="gsk_..."
-              className="flex-1 rounded-xl border border-marigold/40 bg-card px-3.5 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-saffron"
-            />
-            <button
-              onClick={saveKey}
-              className="rounded-xl bg-gradient-to-r from-saffron to-terracotta px-4 py-2 text-xs font-semibold text-primary-foreground shadow transition-transform hover:scale-105"
-            >
-              {saved ? "Saved ✓" : "Save"}
-            </button>
-          </div>
-        </div>
-
         {/* Accessibility toggles */}
         <div className="space-y-2">
           <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase px-1">Accessibility Modes</h3>

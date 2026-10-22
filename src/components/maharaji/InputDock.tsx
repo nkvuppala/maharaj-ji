@@ -95,10 +95,9 @@ export default function InputDock({ lang, onLangChange, onSend, disabled }: Inpu
               onClick={() => setLangOpen((o) => !o)}
               aria-expanded={langOpen}
               aria-label="Choose language"
-              className="flex h-11 items-center gap-1 rounded-full border border-marigold/40 bg-secondary/70 px-3 text-sm font-semibold text-walnut transition-colors hover:bg-secondary"
+              className="flex h-11 items-center gap-1.5 rounded-full border border-marigold/40 bg-secondary/80 px-3 text-sm font-semibold text-walnut transition-colors hover:bg-secondary"
             >
-              <span className="hidden sm:inline">{activeLang.label}</span>
-              <span className="sm:hidden">{activeLang.label.slice(0, 2)}</span>
+              <span>{activeLang.label}</span>
               <svg viewBox="0 0 12 8" className={`h-2 w-2.5 transition-transform ${langOpen ? "rotate-180" : ""}`} aria-hidden="true">
                 <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" />
               </svg>
@@ -106,7 +105,7 @@ export default function InputDock({ lang, onLangChange, onSend, disabled }: Inpu
             {langOpen && (
               <>
                 <button className="fixed inset-0 z-10 cursor-default" aria-label="Close language picker" onClick={() => setLangOpen(false)} />
-                <ul className="glass-card absolute bottom-full left-0 z-20 mb-2 w-40 overflow-hidden rounded-2xl p-1.5">
+                <ul className="glass-card absolute bottom-full left-0 z-20 mb-2 w-44 overflow-hidden rounded-2xl p-1.5 shadow-xl">
                   {LANGUAGES.map((l) => (
                     <li key={l.code}>
                       <button
@@ -115,11 +114,11 @@ export default function InputDock({ lang, onLangChange, onSend, disabled }: Inpu
                           setLangOpen(false);
                         }}
                         className={`flex w-full items-center justify-between rounded-xl px-3.5 py-2 text-sm font-medium transition-colors hover:bg-secondary ${
-                          l.code === lang ? "text-primary" : "text-foreground"
+                          l.code === lang ? "text-primary font-semibold bg-secondary/60" : "text-foreground"
                         }`}
                       >
                         {l.label}
-                        {l.code === lang && <Check className="h-3.5 w-3.5" />}
+                        {l.code === lang && <Check className="h-3.5 w-3.5 text-primary" />}
                       </button>
                     </li>
                   ))}
@@ -131,7 +130,8 @@ export default function InputDock({ lang, onLangChange, onSend, disabled }: Inpu
           {/* Voice input */}
           <button
             onClick={toggleListening}
-            aria-label={listening ? "Stop listening" : "Speak your question"}
+            aria-label={listening ? "Stop listening" : `Speak your question in ${activeLang.label}`}
+            title={listening ? "Stop listening" : `Speak in ${activeLang.label} (Switch language on left for Hindi)`}
             className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-all duration-300 sm:h-12 sm:w-12 ${
               listening
                 ? "mic-ripple bg-gradient-to-br from-marigold to-saffron text-primary-foreground shadow-lg shadow-marigold/40"

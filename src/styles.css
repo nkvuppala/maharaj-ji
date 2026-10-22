@@ -127,10 +127,9 @@
 
 .sanctuary-bg {
   background:
-    radial-gradient(60rem 34rem at 12% -8%, oklch(0.93 0.07 85 / 0.75), transparent 60%),
-    radial-gradient(50rem 30rem at 95% 4%, oklch(0.92 0.06 60 / 0.5), transparent 55%),
-    radial-gradient(40rem 26rem at 50% 110%, oklch(0.94 0.05 70 / 0.6), transparent 60%),
-    linear-gradient(180deg, var(--color-parchment), var(--color-linen) 55%, var(--color-background));
+    radial-gradient(ellipse 90% 55% at 50% -15%, oklch(0.94 0.06 80 / 0.75), transparent 75%),
+    radial-gradient(ellipse 70% 45% at 50% 105%, oklch(0.95 0.04 70 / 0.5), transparent 75%),
+    linear-gradient(180deg, var(--color-parchment) 0%, var(--color-linen) 48%, var(--color-background) 100%);
 }
 
 .glass-card {

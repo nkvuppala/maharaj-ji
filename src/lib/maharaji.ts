@@ -253,12 +253,27 @@ export function playTempleBell() {
 
 /**
  * Intelligent spiritual response matcher based on knowledgeBase.ts & trainingData.ts.
- * Supports English, Hindi, Hinglish, Telugu, and Tamil.
+ * Supports English, Hindi (Devanagari & Hinglish), Telugu, and Tamil.
  */
+function isHindiSpeech(query: string, lang: Lang): boolean {
+  if (lang === "hi") return true;
+  if (/[\u0900-\u097F]/.test(query)) return true;
+  const HINDI_TOKENS = [
+    "kya", "kar", "sakta", "sakti", "hoon", "hun", "hai", "hain", "karo", "kare", "karu",
+    "kaise", "kyun", "kyu", "mujhe", "mera", "meri", "mere", "aap", "tum", "baba",
+    "kripa", "shanti", "man", "mann", "dukh", "kasht", "chinta", "pareshan", "bhagwan",
+    "seva", "karna", "chahiye", "raha", "rahe", "rahi", "namaste", "pranam", "rah", "rasta",
+    "marg", "dikhao", "batao", "samajh", "aashirwad", "darshan", "madad", "gussa"
+  ];
+  const words = query.toLowerCase().split(/[\s,?.!]+/);
+  return words.some((w) => HINDI_TOKENS.includes(w));
+}
+
 export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
   const query = userQuery.toLowerCase().trim();
+  const isHindi = isHindiSpeech(query, lang);
 
-  // 1. Check if user configured an actual Groq API key in Settings
+  // 1. Check if user configured an actual Groq API key in local storage
   const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
   if (savedKey && savedKey.startsWith("gsk_")) {
     try {
@@ -274,7 +289,7 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
             {
               role: "system",
               content:
-                "You are embodying Neem Karoli Baba (Maharaj-ji). Speak with warmth, brevity (2-4 sentences max), fatherly affection ('beta' or 'my child'), and timeless wisdom. Teachings: Love everyone, serve everyone, remember God, Sub Ek. Match the user's language.",
+                "You are embodying Neem Karoli Baba (Maharaj-ji). Speak with warmth, brevity (2-4 sentences max), fatherly affection ('beta' or 'my child'), and timeless wisdom. Teachings: Love everyone, serve everyone, remember God, Sub Ek. If the user writes or speaks in Hindi or Hinglish, ALWAYS reply in affectionate Hindi.",
             },
             { role: "user", content: userQuery },
           ],
@@ -293,52 +308,95 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
   }
 
   // 2. Intelligent local matcher from trainingData.ts and knowledgeBase.ts
-  if (query.includes("shanti") || query.includes("peace") || query.includes("calm") || query.includes("quiet")) {
-    if (lang === "hi") {
+
+  // "Mein kya kar sakta hoon" / "What can I do" / Action & Duty
+  if (
+    query.includes("kya kar sakta") ||
+    query.includes("kya karu") ||
+    query.includes("what can i do") ||
+    query.includes("what should i do") ||
+    query.includes("how can i help")
+  ) {
+    if (isHindi) {
+      return "बेटा, कुछ बड़ा करने की चिंता मत करो। बस आज किसी भूखे को प्रेम से भोजन कराओ, किसी उदास व्यक्ति के चेहरे पर मुस्कान लाओ, और हृदय में 'राम' नाम का स्मरण रखो। जब तुम निस्वार्थ भाव से किसी की सेवा करते हो, तो वही सबसे बड़ा काम है। मैं तुम्हारे साथ हर पल हूँ, सब ठीक होगा। 🙏";
+    }
+    return "Do not worry about doing something grand, my child. Just feed someone hungry today, bring a smile to a weary face, and keep 'Ram' in your heart. When you serve selflessly, you do God's work. I am with you always. 🙏";
+  }
+
+  // Right path / Guidance / "Sahi rah dikhaiye"
+  if (
+    query.includes("rah") ||
+    query.includes("rasta") ||
+    query.includes("marg") ||
+    query.includes("direction") ||
+    query.includes("guide") ||
+    query.includes("path")
+  ) {
+    if (isHindi) {
+      return "सच्चा मार्ग वही है जहां तुम्हारे मन में किसी के प्रति कपट न हो, बेटा। सत्य बोलो, सब प्राणियों में ईश्वर को देखो, और अपने कर्तव्यों को ईश्वर का कार्य समझकर करो। जब तुम एक कदम सत्य की ओर बढ़ाते हो, तो भगवान तुम्हें थामने के लिए दस कदम आगे आते हैं। 🙏";
+    }
+    return "The right path is where your heart holds no deceit, my child. Speak the truth, see the Divine in every soul, and perform your duty as an offering to God. Take one sincere step toward goodness, and God walks ten steps to hold your hand. 🙏";
+  }
+
+  // Inner peace & anxiety
+  if (query.includes("shanti") || query.includes("peace") || query.includes("calm") || query.includes("quiet") || query.includes("sukoon")) {
+    if (isHindi) {
       return "शांति बाहर खोजने से नहीं मिलती, बेटा। जब मन की भागदौड़ शांत होती है, तब शांति अपने आप प्रकट होती है। आंखें बंद करो, 'राम' नाम लो, और जानो — मैं सदा तुम्हारे पास हूँ। 🙏";
     }
     return "Peace is not something you find by running to the mountains, my child. It is already within you. When you quiet the noisy mind and chant Ram, peace remains. Sit quietly. I am right here with you. 🙏";
   }
 
-  if (query.includes("hurt") || query.includes("love") || query.includes("forgive") || query.includes("enemy") || query.includes("prem")) {
-    if (lang === "hi") {
+  // Hurt / Forgiveness / Love
+  if (query.includes("hurt") || query.includes("love") || query.includes("forgive") || query.includes("enemy") || query.includes("prem") || query.includes("maaf") || query.includes("gussa")) {
+    if (isHindi) {
       return "बेटा, जो तुम्हें दुख देता है, वह भी कष्ट में है। उनके कर्मों को मत देखो, उनके भीतर बैठे भगवान को देखो। क्षमा करो — उनके लिए नहीं, अपनी आत्मा की शांति के लिए। सबको प्रेम करो, सब एक है। 🙏";
     }
     return "The one who hurts you is also suffering, my child. See their pain, not their actions. When you see God in everyone, love becomes effortless. Forgive — not for their sake, but for your own peace. Sub Ek. 🙏";
   }
 
-  if (query.includes("fear") || query.includes("worry") || query.includes("future") || query.includes("job") || query.includes("career") || query.includes("chinta")) {
-    if (lang === "hi") {
+  // Fear / Worry / Job / Career / Chinta
+  if (query.includes("fear") || query.includes("worry") || query.includes("future") || query.includes("job") || query.includes("career") || query.includes("chinta") || query.includes("darr")) {
+    if (isHindi) {
       return "चिंता से आज तक किसका भला हुआ है? अपना कर्तव्य पूरे प्रेम से करो, बाकी सब भगवान पर छोड़ दो। जब मैं तुम्हारे साथ हूँ, तो डरने की क्या बात है, बेटा? विश्वास रखो। 🙏";
     }
     return "What can fear give you, beta? Nothing. What can faith give you? Everything. Do your duty with full love, and leave the results to God. When I am with you always, what is there to fear? 🙏";
   }
 
-  if (query.includes("serve") || query.includes("seva") || query.includes("money") || query.includes("paisa") || query.includes("help")) {
-    if (lang === "hi") {
+  // Seva / Service / Money
+  if (query.includes("serve") || query.includes("seva") || query.includes("money") || query.includes("paisa") || query.includes("help") || query.includes("madad")) {
+    if (isHindi) {
       return "सेवा पैसे से नहीं, सच्चे हृदय से होती है, बेटा। भूखे को भोजन कराओ, किसी उदास व्यक्ति को अपनी मुस्कान दो, किसी की बात ध्यान से सुनो। जब तुम दूसरों की सेवा करते हो, तो तुम भगवान की ही सेवा करते हो। 🙏";
     }
     return "Seva is never about money, my child. Give your time. Give your attention. Feed the hungry, comfort the lonely. When you serve another with your hands, you serve God directly. The giving heart is the richest heart. 🙏";
   }
 
-  if (query.includes("kainchi") || query.includes("hanuman") || query.includes("dham") || query.includes("temple")) {
+  // Kainchi Dham / Hanuman Ji
+  if (query.includes("kainchi") || query.includes("hanuman") || query.includes("dham") || query.includes("temple") || query.includes("mandir") || query.includes("chalisa")) {
+    if (isHindi) {
+      return "कैंची धाम वह पावन भूमि है जहां की ठंडी हवाओं में राम-नाम गूंजता है। हनुमान जी वहां साक्षात विराजमान हैं, जो सच्चे मन से पुकारने वाले हर भक्त का भार अपने ऊपर ले लेते हैं। कभी कैंची आओ बेटा, बाबा का आशीर्वाद सदा तुम्हारे साथ है। 🙏";
+    }
     return "Kainchi Dham is a sacred pocket between the green hills of Kumaon where the cold mountain river whispers Ram Nam. Hanuman Ji sits there with immense tenderness, removing every burden from the devotee who calls on Him with a pure heart. Have faith — His grace is never delayed. 🙏";
   }
 
-  if (query.includes("meaning of life") || query.includes("purpose") || query.includes("arth") || query.includes("jivan")) {
-    if (lang === "hi") {
+  // Meaning of life / Purpose
+  if (query.includes("meaning of life") || query.includes("purpose") || query.includes("arth") || query.includes("jivan") || query.includes("karan")) {
+    if (isHindi) {
       return "जीवन का सार बहुत सरल है, बेटा: 'सबको प्रेम करो, सबकी सेवा करो, भगवान को याद रखो, और सत्य बोलो।' इसी में सारा ज्ञान और मुक्ति समाई है। 🙏";
     }
     return "The meaning of life is very simple, beta: Love everyone, serve everyone, remember God, and tell the truth. Everything else is just passing scenery. Keep the heart pure. 🙏";
   }
 
-  if (query.includes("ram") || query.includes("mantra") || query.includes("chant") || query.includes("naam")) {
+  // Ram Nam / Chanting
+  if (query.includes("ram") || query.includes("mantra") || query.includes("chant") || query.includes("naam") || query.includes("japa")) {
+    if (isHindi) {
+      return "मुख में सदा भगवान का नाम रखो, बेटा। राम, राम, राम — चलते, फिरते, खाते, काम करते हुए जपते रहो। राम नाम सारे संशयों और दुखों को हर लेता है। 🙏";
+    }
     return "Keep God's name on your lips always, my child. Ram, Ram, Ram — repeat it while walking, eating, or working. Slowly, the Holy Name dissolves every anxiety and becomes your constant protector. 🙏";
   }
 
-  // 3. Multilingual Default Fallbacks
-  if (lang === "hi") {
-    return "बेटा, जो भी तुम्हारे मन पर बोझ है, उसे भगवान के चरणों में समर्पित कर दो। प्रेम और सच्चाई से काम करो, सब मंगलमय होगा। मैं सदा तुम्हारे साथ हूँ। 🙏";
+  // 3. Fallbacks by language
+  if (isHindi) {
+    return "सबको खिलाओ बेटा। सब प्राणियों से प्रेम करो, सत्य बोलो और भगवान का नाम सदा स्मरण रखो। जब तुम निस्वार्थ भाव से सेवा करते हो, तो बाबा तुम्हारे साथ हर पल रहता है। चिंता मत करो, सब ठीक होगा। 🙏";
   }
   if (lang === "te") {
     return "బిడ్డా, మీ హృదయంలోని భారాన్ని భగవంతునికి సమర్పించండి. అందరినీ ప్రేమించండి, అందరికీ సేవ చేయండి, భగవంతుని స్మరించండి. అంతా మంగళమే జరుగుతుంది. 🙏";
