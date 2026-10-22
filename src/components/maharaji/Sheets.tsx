@@ -275,33 +275,150 @@ export function PrasadModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 /**
- * Sacred Japa chanting patterns — two separate regexes for reliable matching:
- * - Latin/Romanized: uses \b word boundaries (safe for ASCII)
- * - Devanagari: uses lookahead/lookbehind-free position matching (since \b fails on Unicode)
+ * Subtle sacred wood/chime audio click on each bead increment
  */
-const JAPA_LATIN =
-  /\b(ram|rama|raam|sita|seeta|sitaram|sita\s*ram|siya\s*ram|siyaram|om|aum|shiva|shiv|shivaya|shivam|om\s*namah\s*shivaya|hare|krishna|krsna|radhe|radha|govind|gopal|hari|hanuman|bajrang|baba|jai|jay|sri|shri|narayana|narayan|lakshmi|durga|ganesh|ganesha|mahadev|prabhu|bhagwan|sai)\b/gi;
+function playBeadClick() {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    // Gentle melodic wood-block bell tone (G5 784Hz -> C5 523Hz)
+    osc.frequency.setValueAtTime(784, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(523, ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+    setTimeout(() => {
+      try {
+        ctx.close();
+      } catch {}
+    }, 200);
+  } catch {
+    /* audio blocked */
+  }
+}
 
-const JAPA_DEVANAGARI =
-  /(जय|राम|राम\s*राम|सिया|सीता|सीताराम|शिव|ॐ|ओम|कृष्ण|राधे|राधा|हरि|हनुमान|बजरंग|बाबा|श्री|नारायण|लक्ष्मी|दुर्गा|गणेश|महादेव|प्रभु|भगवान|साई)/gi;
+export const JAPA_MANTRAS = [
+  { id: "ram_ram", label: "राम राम", name: "Ram Ram (Pair)", desc: "Each 'Ram Ram' = 1 bead" },
+  { id: "sita_ram", label: "सीता राम", name: "Sita Ram", desc: "Each 'Sita Ram' = 1 bead" },
+  { id: "ram_single", label: "राम", name: "Ram (Single)", desc: "Each single 'Ram' = 1 bead" },
+  { id: "om_namah_shivaya", label: "ॐ नमः शिवाय", name: "Om Namah Shivaya", desc: "Each chant = 1 bead" },
+  { id: "hare_krishna", label: "हरे कृष्ण", name: "Hare Krishna", desc: "Each chant = 1 bead" },
+  { id: "auto", label: "सभी नाम", name: "Auto Detect", desc: "Smart detection for all holy names" },
+] as const;
 
-function countMantraMatches(text: string): { count: number; lastMatch: string | null } {
-  const t = text.toLowerCase().trim();
-  if (!t) return { count: 0, lastMatch: null };
+export type MantraId = (typeof JAPA_MANTRAS)[number]["id"];
 
-  const latinMatches = t.match(JAPA_LATIN) || [];
-  const devaMatches = text.match(JAPA_DEVANAGARI) || [];
+/**
+ * Intelligent mantra parser:
+ * Accurately detects complete chant units without overcounting syllables.
+ * E.g., in 'ram_ram' mode, 26 words of 'ram' or 13 'Ram Ram' phrases = exactly 13 beads!
+ */
+export function parseChants(rawText: string, mantraId: MantraId = "ram_ram"): string[] {
+  if (!rawText || !rawText.trim()) return [];
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
 
-  // Use whichever found more matches (avoids double-counting mixed scripts)
-  const matches = latinMatches.length >= devaMatches.length ? latinMatches : devaMatches;
-  return {
-    count: matches.length,
-    lastMatch: matches.length > 0 ? matches[matches.length - 1] : null,
-  };
+  if (mantraId === "ram_ram") {
+    // 1. Direct explicit pairs in Latin or Devanagari
+    const pairRegex = /(?:ram|rama|raam)\s+(?:ram|rama|raam)|ramram|राम\s*राम|रामराम/gi;
+    const directPairs = (lower.match(pairRegex) || []).length;
+
+    // 2. Total occurrences of the sacred word "ram" / "राम"
+    const singleLatinRams = (lower.match(/\b(ram|rama|raam)\b/gi) || []).length;
+    const singleDevaRams = (text.match(/(राम)/g) || []).length;
+    const totalRams = Math.max(singleLatinRams, singleDevaRams);
+
+    // Each pair (2 rams) is 1 bead chant
+    const pairedFromTokens = Math.floor(totalRams / 2);
+    const count = Math.max(directPairs, pairedFromTokens);
+    return Array(count).fill("राम राम");
+  }
+
+  if (mantraId === "ram_single") {
+    const singleLatin = (lower.match(/\b(ram|rama|raam)\b/gi) || []).length;
+    const singleDeva = (text.match(/(राम)/g) || []).length;
+    const count = Math.max(singleLatin, singleDeva);
+    return Array(count).fill("राम");
+  }
+
+  if (mantraId === "sita_ram") {
+    const regex = /\b(sita\s*ram|siya\s*ram|sitaram|siyaram)\b|(सीता\s*राम|सिया\s*राम|सीताराम|सियाराम)/gi;
+    const matches = lower.match(regex) || text.match(regex) || [];
+    return matches.map(() => "सीता राम");
+  }
+
+  if (mantraId === "om_namah_shivaya") {
+    const regex = /\b(om\s*namah\s*shivay[a]?|har\s*har\s*mahadev|shiva|shivaya)\b|(ॐ\s*नमः\s*शिवाय|नमः\s*शिवाय|हर\s*हर\s*महादेव|शिव)/gi;
+    const matches = lower.match(regex) || text.match(regex) || [];
+    return matches.map(() => "ॐ नमः शिवाय");
+  }
+
+  if (mantraId === "hare_krishna") {
+    const regex = /\b(hare\s*krishna|hare\s*rama|radhe\s*krishna)\b|(हरे\s*कृष्ण|हरे\s*राम|राधे\s*कृष्ण)/gi;
+    const matches = lower.match(regex) || text.match(regex) || [];
+    return matches.map(() => "हरे कृष्ण");
+  }
+
+  // AUTO / ALL MODE: Match longest multi-word phrases first to prevent splitting into multiple beads
+  const results: string[] = [];
+  let remL = lower;
+  let remD = text;
+
+  // Sita Ram
+  const sitaMatches = remL.match(/\b(sita\s*ram|siya\s*ram|sitaram|siyaram)\b/g) || remD.match(/(सीता\s*राम|सिया\s*राम|सीताराम|सियाराम)/g);
+  if (sitaMatches) {
+    results.push(...sitaMatches.map(() => "सीता राम"));
+    remL = remL.replace(/\b(sita\s*ram|siya\s*ram|sitaram|siyaram)\b/g, " ");
+    remD = remD.replace(/(सीता\s*राम|सिया\s*राम|सीताराम|सियाराम)/g, " ");
+  }
+
+  // Ram Ram pairs
+  const ramPairs = remL.match(/(?:ram|rama|raam)\s+(?:ram|rama|raam)|ramram/g) || remD.match(/(राम\s*राम|रामराम)/g);
+  if (ramPairs) {
+    results.push(...ramPairs.map(() => "राम राम"));
+    remL = remL.replace(/(?:ram|rama|raam)\s+(?:ram|rama|raam)|ramram/g, " ");
+    remD = remD.replace(/(राम\s*राम|रामराम)/g, " ");
+  }
+
+  // Shiva
+  const shivMatches = remL.match(/\b(om\s*namah\s*shivay[a]?|har\s*har\s*mahadev)\b/g) || remD.match(/(ॐ\s*नमः\s*शिवाय|हर\s*हर\s*महादेव)/g);
+  if (shivMatches) {
+    results.push(...shivMatches.map(() => "ॐ नमः शिवाय"));
+    remL = remL.replace(/\b(om\s*namah\s*shivay[a]?|har\s*har\s*mahadev)\b/g, " ");
+    remD = remD.replace(/(ॐ\s*नमः\s*शिवाय|हर\s*हर\s*महादेव)/g, " ");
+  }
+
+  // Hare Krishna
+  const krishnaMatches = remL.match(/\b(hare\s*krishna|hare\s*rama)\b/g) || remD.match(/(हरे\s*कृष्ण|हरे\s*राम)/g);
+  if (krishnaMatches) {
+    results.push(...krishnaMatches.map(() => "हरे कृष्ण"));
+    remL = remL.replace(/\b(hare\s*krishna|hare\s*rama)\b/g, " ");
+    remD = remD.replace(/(हरे\s*कृष्ण|हरे\s*राम)/g, " ");
+  }
+
+  // Standalone words
+  const standaloneL = remL.match(/\b(ram|om|aum|shiva|krishna|radhe|hari|hanuman|baba)\b/g) || [];
+  const standaloneD = remD.match(/(राम|शिव|ॐ|ओम|कृष्ण|राधे|हरि|हनुमान|बाबा)/g) || [];
+  const standaloneCount = Math.max(standaloneL.length, standaloneD.length);
+  for (let i = 0; i < standaloneCount; i++) {
+    results.push(standaloneD[i] || standaloneL[i]?.toUpperCase() || "राम");
+  }
+
+  return results;
 }
 
 export function JapaModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [count, setCount] = useState(0);
+  const [selectedMantra, setSelectedMantra] = useState<MantraId>("ram_ram");
   const [voiceActive, setVoiceActive] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [lastMantra, setLastMantra] = useState<string | null>(null);
@@ -310,15 +427,20 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
 
   const complete = count >= 108;
   const countRef = useRef<number>(0);
+  const selectedMantraRef = useRef<MantraId>("ram_ram");
   const voiceActiveRef = useRef<boolean>(false);
   const recognitionRef = useRef<any>(null);
-  // Track cumulative counts from finalized results to avoid double-counting
-  const cumulativeCountRef = useRef<number>(0);
+  // Track counts already credited per recognition result index to enable live streaming without double-counting
+  const countedPerIndexRef = useRef<Map<number, number>>(new Map());
   const restartAttemptsRef = useRef<number>(0);
 
   useEffect(() => {
     countRef.current = count;
   }, [count]);
+
+  useEffect(() => {
+    selectedMantraRef.current = selectedMantra;
+  }, [selectedMantra]);
 
   useEffect(() => {
     voiceActiveRef.current = voiceActive;
@@ -340,6 +462,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       setVoiceActive(false);
       setLastMantra(null);
       setDebugTranscript("");
+      countedPerIndexRef.current.clear();
     }
   }, [open]);
 
@@ -349,9 +472,13 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       const next = Math.min(prev + amount, 108);
       countRef.current = next;
 
+      // Soft haptic feedback
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
         navigator.vibrate(25);
       }
+      // Instant melodic bead audio feedback
+      playBeadClick();
+
       if (next === 108) {
         playTempleBell();
         setVoiceActive(false);
@@ -365,7 +492,7 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
 
     if (mantraName) {
       setLastMantra(mantraName);
-      setTimeout(() => setLastMantra(null), 2400);
+      setTimeout(() => setLastMantra(null), 2000);
     }
   };
 
@@ -375,48 +502,45 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
     if (!SR) return;
 
     try {
+      try {
+        recognitionRef.current?.abort();
+      } catch {}
+
       const rec = new SR();
       rec.continuous = true;
       rec.interimResults = true;
       rec.lang = "hi-IN";
-      // maxAlternatives for broader recognition coverage
-      rec.maxAlternatives = 3;
+      rec.maxAlternatives = 1;
+
+      // Reset index tracking for this new recognition stream
+      countedPerIndexRef.current.clear();
 
       rec.onresult = (event: any) => {
-        // Process all results from the event
+        // Process each result live as the user speaks (no pause required)
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const res = event.results[i];
+          const transcript = res[0]?.transcript || "";
+          if (!transcript.trim()) continue;
 
-          // Gather transcripts from all alternatives for better matching
-          let bestCount = 0;
-          let bestMatch: string | null = null;
-          let bestTranscript = "";
+          setDebugTranscript(transcript);
 
-          for (let alt = 0; alt < res.length; alt++) {
-            const transcript = res[alt]?.transcript || "";
-            if (!transcript) continue;
+          // Parse chant units using the chosen mantra setting
+          const chants = parseChants(transcript, selectedMantraRef.current);
+          const totalInResult = chants.length;
+          const previouslyCounted = countedPerIndexRef.current.get(i) || 0;
+          const diff = totalInResult - previouslyCounted;
 
-            const { count: mc, lastMatch } = countMantraMatches(transcript);
-            if (mc > bestCount) {
-              bestCount = mc;
-              bestMatch = lastMatch;
-              bestTranscript = transcript;
-            }
+          // Increment LIVE on each chant detected
+          if (diff > 0) {
+            const latest = chants[chants.length - 1];
+            countBead(diff, latest);
+            countedPerIndexRef.current.set(i, totalInResult);
+            restartAttemptsRef.current = 0;
           }
 
           if (res.isFinal) {
-            // Finalized: count the mantras found
-            setDebugTranscript(bestTranscript);
-            if (bestCount > 0 && bestMatch) {
-              countBead(bestCount, bestMatch);
-              restartAttemptsRef.current = 0; // reset backoff on success
-            }
-          } else {
-            // Interim: show live indicator (don't count yet)
-            if (bestMatch) {
-              setLastMantra(bestMatch);
-              setDebugTranscript(bestTranscript);
-            }
+            // Lock in finalized count for this index
+            countedPerIndexRef.current.set(i, Math.max(previouslyCounted, totalInResult));
           }
         }
       };
@@ -429,20 +553,18 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           return;
         }
         if (e.error === "no-speech") {
-          // User hasn't spoken — just restart silently
-          return;
+          return; // Silent restart on onend
         }
         if (e.error === "network") {
-          setVoiceError("Network error — speech recognition requires internet. Please check your connection.");
+          setVoiceError("Network error — speech recognition requires internet. Reconnecting...");
           return;
         }
-        // For aborted / other errors, let onend handle restart
       };
 
       rec.onend = () => {
-        // Reconnect seamlessly if still chanting and below 108
+        // Reconnect smoothly if user is still chanting and mala not finished
         if (voiceActiveRef.current && countRef.current < 108) {
-          const delay = Math.min(200 * Math.pow(1.5, restartAttemptsRef.current), 3000);
+          const delay = Math.min(200 * Math.pow(1.5, restartAttemptsRef.current), 2000);
           restartAttemptsRef.current++;
           setTimeout(() => {
             if (voiceActiveRef.current && countRef.current < 108) {
@@ -480,10 +602,11 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
       } catch {}
       recognitionRef.current = null;
       setDebugTranscript("");
+      countedPerIndexRef.current.clear();
       return;
     }
 
-    cumulativeCountRef.current = 0;
+    countedPerIndexRef.current.clear();
     restartAttemptsRef.current = 0;
     startRecognition();
   };
@@ -498,27 +621,62 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           {complete ? (
             <p className="mt-1 text-sm font-semibold text-terracotta animate-pulse">🙏 108 Mala Complete • Ram Ram Sita Ram</p>
           ) : (
-            <p className="mt-1 text-xs text-muted-foreground">Chant "Ram Ram", "Om", or tap beads manually</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Chant live with voice auto-count, or tap beads manually
+            </p>
           )}
         </div>
 
         {/* Live Chant Detection Pill */}
         {lastMantra && (
           <div className="mx-auto mb-3 flex items-center justify-center gap-1.5 animate-bounce">
-            <span className="inline-flex items-center gap-1 rounded-full bg-saffron/15 border border-saffron/40 px-3 py-1 text-xs font-semibold text-saffron">
-              ✨ Chant Detected: "{lastMantra}" (+1)
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-saffron/15 border border-saffron/40 px-3.5 py-1 text-xs font-semibold text-saffron shadow-sm">
+              ✨ Live Chant: "{lastMantra}" (+1)
             </span>
           </div>
         )}
 
-        {/* Debug transcript (only when voice active) */}
+        {/* Live heard transcript */}
         {voiceActive && debugTranscript && (
           <div className="mx-auto mb-3 max-w-sm text-center">
-            <p className="text-[10px] text-muted-foreground/70 italic truncate">
-              🎙️ Heard: "{debugTranscript}"
+            <p className="text-[11px] text-muted-foreground/80 italic truncate font-medium">
+              🎙️ Hearing: "{debugTranscript}"
             </p>
           </div>
         )}
+
+        {/* Mantra Selector Pills */}
+        <div className="mx-auto mb-4 w-full max-w-md">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <span className="text-[11px] font-medium text-muted-foreground">Chant Target:</span>
+            <span className="text-[11px] font-semibold text-primary">
+              {JAPA_MANTRAS.find((m) => m.id === selectedMantra)?.desc}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {JAPA_MANTRAS.map((m) => {
+              const active = selectedMantra === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    setSelectedMantra(m.id);
+                    selectedMantraRef.current = m.id;
+                    countedPerIndexRef.current.clear();
+                    setLastMantra(null);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                    active
+                      ? "bg-gradient-to-r from-saffron to-terracotta text-primary-foreground shadow-sm scale-105"
+                      : "bg-secondary text-walnut/80 border border-marigold/30 hover:bg-amber-glow/60 hover:text-primary"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Progress bar */}
         <div className="mx-auto mb-4 h-2 w-full max-w-sm rounded-full bg-secondary overflow-hidden">
@@ -559,10 +717,10 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
               </span>
               <div>
                 <span className="block text-xs font-semibold text-foreground-deep">
-                  {voiceActive ? "Voice Chanting Active 🎙️" : "Voice Chanting Mode"}
+                  {voiceActive ? "Voice Chanting Active (Live) 🎙️" : "Voice Chanting Mode"}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
-                  {voiceActive ? "Chant 'Ram' or 'Om' aloud to auto-count" : "Auto-increments beads as you chant"}
+                  {voiceActive ? "Increments live as you speak each chant" : "Auto-increments beads live as you chant"}
                 </span>
               </div>
             </div>
@@ -580,8 +738,8 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           </div>
           {voiceError && <p className="mt-2 text-[11px] text-destructive">⚠️ {voiceError}</p>}
           {voiceActive && !voiceError && (
-            <p className="mt-2 text-[10px] text-muted-foreground/60">
-              💡 Tip: Speak clearly and steadily. Say "Ram Ram" or "Om Namah Shivaya" — each divine name counts as one bead.
+            <p className="mt-2 text-[10px] text-muted-foreground/70">
+              💡 Chanting is live! Each repetition ticks the mala instantly with gentle sound feedback.
             </p>
           )}
         </div>
@@ -598,6 +756,8 @@ export function JapaModal({ open, onClose }: { open: boolean; onClose: () => voi
           <button
             onClick={() => {
               setCount(0);
+              countRef.current = 0;
+              countedPerIndexRef.current.clear();
               setLastMantra(null);
               setDebugTranscript("");
             }}
