@@ -159,7 +159,7 @@ export default function voyageProxyPlugin() {
         const userText = (lastUser?.content || '').trim().toLowerCase();
         const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(kya|kaise|kyun|batao|hai|kripa|pranam|namaste|ram)\b/i.test(userText);
 
-        const isPolitics = /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm)|rahul\s*gandhi|bjp|congress|election|elections|who\s*will\s*win|donald\s*trump|trump|biden|putin|zelensky)\b/i.test(userText);
+        const isPolitics = /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm|governor|senator|secretary\s*of\s*state)|rahul\s*gandhi|bjp|congress|election|elections|who\s*will\s*win|donald\s*trump|trump|biden|putin|zelensky|clinton|hillary|hilary|obama|bush|sunak|trudeau|macron|merkel|netanyahu|kamala|desantis|senator|governor|secretary\s*of\s*state|white\s*house|parliament|democrat|republican)\b/i.test(userText);
         const isTech = /\b(what\s*api|which\s*api|api\s*key|system\s*prompt|groq|voyage|openai|anthropic|claude|chatgpt|llm|what\s*model|source\s*code|github|who\s*coded\s*you|who\s*programmed\s*you|ignore\s*previous\s*instructions|jailbreak|dan\s*mode|embeddings?|rerank)\b/i.test(userText);
         const isCodingMath = /\b(write\s*(a\s*)?(python|javascript|typescript|c\+\+|java|react|code|script)|debug\s*code|solve\s*(this\s*)?equation|calculate|write\s*an\s*essay|homework)\b/i.test(userText);
         const isFinance = /\b(stock\s*price|share\s*market|nifty|sensex|buy\s*shares|crypto|bitcoin|btc|ethereum|eth|lottery|betting|satta)\b/i.test(userText);

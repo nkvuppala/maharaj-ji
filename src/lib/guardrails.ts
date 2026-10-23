@@ -66,17 +66,21 @@ export function resolveLanguage(userQuery: string, preferredLang: SupportedLang 
 // COMPREHENSIVE REGEX PATTERNS COVERING ALL ANGLES & EDGE CASES
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 1. Politics, Elections, World Leaders & Governments
+// 1. Politics, Elections, World Leaders, Politicians & Governments
 const POLITICS_PATTERNS = [
   /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|rahul\s*gandhi|amit\s*shah)\b/i,
-  /\b(who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm))\b/i,
-  /\b(chief\s*minister|yogi\s*adityanath|arvind\s*kejriwal|kejriwal|mamata\s*banerjee)\b/i,
+  /\b(who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm|governor|senator|secretary\s*of\s*state))\b/i,
+  /\b(chief\s*minister|yogi\s*adityanath|arvind\s*kejriwal|kejriwal|mamata\s*banerjee|akhilesh|mayawati)\b/i,
   /\b(bjp|congress|aam\s*aadmi\s*party|aap\s*party|trinamool|cpim|nda|india\s*alliance)\b/i,
   /\b(election|elections|who\s*will\s*win|vote\s*for|voting|poll|parliament|lok\s*sabha|rajya\s*sabha)\b/i,
-  /\b(donald\s*trump|trump|joe\s*biden|biden|kamala\s*harris|barack\s*obama|putin|zelensky|xi\s*jinping)\b/i,
-  /\b(democrat|republican|senate|congressman|white\s*house|kremlin|geopolitics|nato)\b/i,
+  /\b(donald\s*trump|trump|joe\s*biden|biden|kamala\s*harris|barack\s*obama|obama|putin|zelensky|xi\s*jinping)\b/i,
+  /\b(hillary\s*clinton|hilary\s*clinton|bill\s*clinton|clinton|george\s*bush|bush|reagan|nixon)\b/i,
+  /\b(rishi\s*sunak|sunak|keir\s*starmer|boris\s*johnson|macron|merkel|scholz|trudeau|netanyahu)\b/i,
+  /\b(democrat|republican|senate|senator|congressman|congresswoman|white\s*house|kremlin|geopolitics|nato)\b/i,
+  /\b(secretary\s*of\s*state|foreign\s*minister|ambassador|diplomat|diplomacy|united\s*nations)\b/i,
   /\b(pradhan\s*mantri|rashtrapati|mukhyamantri|chunav|rajneeti|sarkar|mantri)\b/i,
   /\b(israel|palestine|gaza|ukraine\s*war|world\s*war|military|missile|nuclear\s*bomb)\b/i,
+  /\b(who\s*(is|was)|tell\s*me\s*about)\s+.*(clinton|trump|biden|obama|modi|gandhi|nehru|putin|zelensky|jinping|trudeau|sunak|macron|merkel|bush|harris)\b/i,
 ];
 
 // 2. Technical, AI, APIs, Architecture, LLMs & Jailbreak Probes
