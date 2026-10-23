@@ -113,7 +113,7 @@ function Index() {
     }, 60);
 
     try {
-      const reply = await getMaharajjiReply(trimmed, lang);
+      const reply = await getMaharajjiReply(trimmed, lang, messages);
       // Gentle pause for spiritual contemplative realism
       await new Promise((r) => setTimeout(r, 650));
       const babaMsg: Message = { id: Date.now() + 1, role: "baba", text: reply };

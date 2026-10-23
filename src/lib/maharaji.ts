@@ -293,7 +293,7 @@ export function sanitizeResponse(text: string): string {
     .trim();
 }
 
-async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
+async function computeMaharajjiReply(userQuery: string, lang: Lang, history: Message[] = []): Promise<string> {
   const query = userQuery.toLowerCase().trim();
   const hasDevanagari = /[\u0900-\u097F]/.test(userQuery);
   const hasTelugu = /[\u0C00-\u0C7F]/.test(userQuery);
@@ -326,7 +326,17 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
   try {
     let systemPrompt: string;
     try {
-      const ragResult = await retrieveContext(userQuery);
+      // If user asks follow-up query like "do you have the lyrics of it", resolve context from previous messages
+      let ragQuery = userQuery;
+      const isAnaphoric = /\b(it|its|lyrics|verse|verses|words|doha|dohavali|chalisa|about it|meaning of it|sing it|that)\b/i.test(userQuery);
+      if (isAnaphoric && history.length > 0) {
+        const priorUserQueries = [...history].reverse().filter(m => m.role === 'user' && m.text !== userQuery);
+        if (priorUserQueries.length > 0) {
+          ragQuery = `${priorUserQueries[0].text} ${userQuery}`;
+        }
+      }
+
+      const ragResult = await retrieveContext(ragQuery);
       if (ragResult && ragResult.context) {
         systemPrompt = getSystemPromptWithContext(ragResult.context, ragResult.sources);
       } else {
@@ -353,15 +363,28 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
       headers["x-groq-key"] = savedKey;
     }
 
+    // Assemble multi-turn conversation messages so Groq retains full context
+    const messagesPayload: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+      { role: "system", content: systemPrompt },
+    ];
+    if (history && history.length > 0) {
+      const recent = history.slice(-6);
+      for (const m of recent) {
+        if (m.role === 'user' && m.text !== userQuery) {
+          messagesPayload.push({ role: 'user', content: m.text });
+        } else if (m.role === 'baba') {
+          messagesPayload.push({ role: 'assistant', content: m.text });
+        }
+      }
+    }
+    messagesPayload.push({ role: "user", content: userQuery });
+
     const res = await fetch("/api/groq/chat", {
       method: "POST",
       headers,
       body: JSON.stringify({
         model: "openai/gpt-oss-20b",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userQuery },
-        ],
+        messages: messagesPayload,
         temperature: 0.85,
         max_tokens: 1800,
       }),
@@ -370,13 +393,33 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
     if (res.ok) {
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content?.trim();
-      if (text) return text;
+      // If the LLM still returns a canned "I can't provide the lyrics" refusal, fall through to local matcher
+      if (text && !text.toLowerCase().includes("can't provide the lyrics") && !text.toLowerCase().includes("cannot provide the lyrics")) {
+        return text;
+      }
     }
   } catch (apiErr) {
     console.warn("[Maharaj-ji Live AI] Falling back to local wisdom matcher:", apiErr);
   }
 
   // 2. Intelligent local matcher from trainingData.ts and knowledgeBase.ts (with full EN, HI, TE, TA support)
+
+  // Dohavali / Sacred Dohas / Couplets / Verses
+  const hasDohavaliRef = query.includes("dohavali") || 
+    (history.some(m => m.text.toLowerCase().includes("dohavali")) && (query.includes("lyrics") || query.includes("verse") || query.includes("word") || query.includes("meaning") || query.includes("summary") || query.includes("song")));
+
+  if (hasDohavaliRef) {
+    if (isHindi) {
+      return "अरे बेटा, दोहावली में संत तुलसीदास जी के अत्यंत पावन और भावपूर्ण दोहे हैं, जो प्रभु राम और हनुमान जी की निष्काम भक्ति सिखाते हैं।\n\nयहाँ दोहावली के प्रमुख पावन दोहे हैं:\n\n'मो सम दीन न दीन हित, तुम समान रघुबीर।\nअस विचारि रघुबंस मनि, हरहु विषम भव भीर॥'\nअर्थ: हे रघुकुल शिरोमणि, मेरे जैसा कोई दीन और दुखी नहीं है, और आपके जैसा दीनों का हितैषी व करुणामय कोई दूसरा नहीं है। ऐसा विचार करके मेरे सांसारिक कष्टों और संताप को हर लीजिए।\n\n'कामिहि नारि पिआरि जिमि, लोभिहि प्रिय जिमि दाम।\nतिमि रघुनाथ निरंतर, प्रिय लागहु मोहि राम॥'\nअर्थ: जैसे कामी को स्त्री और लोभी को धन प्रिय होता है, हे रघुनाथ, वैसे ही आप मुझे निरंतर प्यारे लगें।\n\n'एक छत्र मुकुट मनि, सब बरननि पर जोउ।\nतुलसी रघुवर नाम के, बरन बिराजत दोउ॥'\n\nबेटा, इन दोहों का नित्य प्रेम से स्मरण करो। जब भी मन विचलित हो, इन दोहों को गुनगुनाओ और 'राम राम' जपो। सब मंगल होगा! 🙏";
+    }
+    if (isTelugu) {
+      return "నాయనా, దోహావళి అనేది సంత్ తులసీదాస్ రచించిన పరమ పవిత్రమైన భక్తి ద్విపదలు. శ్రీరాముని పాదాల వద్ద సంపూర్ణ శరణాగతిని ఇవి బోధిస్తాయి.\n\nప్రధాన దోహా:\n'మో సమ దీన న దీన హిత, తుమ సమాన రఘుబీర,\nఅస విచారి రఘుబంస మణి, హరహు విషమ భవ భీర.'\nభావం: ఓ రఘువీరా, నావంటి దీనుడు ఎవరూ లేరు, మీవంటి దయామయుడు ఎవరూ లేరు. నా సంసార భయాలను మరియు బాధలను దూరం చేయండి.\n\nఈ పవిత్రమైన దోహాలను మనసులో ఉంచుకోండి నాయనా, నిరంతరం రామ నామాన్ని జపించండి. అంతా మంగళమే జరుగుతుంది! రామ్ రామ్! 🙏";
+    }
+    if (isTamil) {
+      return "குழந்தையே, தோஹாவளி என்பது துறவி துளசிதாசர் இயற்றிய மிக புனிதமான பக்தி பாடல்கள் ஆகும். இது ராமபிரானின் பாதங்களில் சரணடைவதை கற்பிக்கிறது.\n\nபுனித வரிகள்:\n'மோ சம தீன ந தீன ஹித, தும் சமான ரகுபீர,\nஅச விசாரி ரகுபன்ச மணி, ஹரஹு விஷம பவ பீர.'\nபொருள்: ஓ ரகுவீரா, என்னைப்போல் எளியவர் எவருமில்லை, உங்களைப்போல் கருணைமிக்கவர் எவருமில்லை. எனது உலகத் துன்பங்களை நீக்கி அருளுங்கள்.\n\nஇந்த புனித வரிகளை நெஞ்சில் தாங்கி, எப்போது 'ராம் ராம்' என்று சொல்லுங்கள் குழந்தையே. எல்லாம் நலமாகும்! 🙏";
+    }
+    return "Arey my child, the Dohavali contains the deeply sweet and sacred couplets composed by Sant Tulsidas, carrying the pure nectar of surrender to Lord Ram.\n\nHere are the sacred opening verses of the Dohavali:\n\n'Mo sama dina na dina hita, tuma samana raghubira,\nAsa vicari raghubansa mani, harahu visama bhava bhira.'\nMeaning: O Lord Raghuvir, there is no one as lowly as I am, and there is no one as compassionate to the humble as you are. Considering this, jewel of the Raghu dynasty, take away all my worldly afflictions and fear.\n\n'Kamihi nari piyari jimi, lobhihi priya jimi dama,\nTimi raghunatha nirantara, priya lagahu mohi rama.'\nMeaning: Just as a worldly person craves earthly pleasures and a greedy person yearns for wealth, O Raghunatha, may my heart unceasingly love and cherish you with that same devotion.\n\n'Pranatapala raghubansa mani, karuna sindhu kharari,\nGa-e sarana prabhu rakhi hai, saba aparadha bisari.'\nMeaning: Lord Ram is the protector of all who seek his shelter and an endless ocean of mercy. Whoever surrenders at his feet is embraced, and all their past shortcomings are forgiven.\n\nKeep these sacred dohas in your heart, beta. Repeat them with love, feed whoever comes to your door, and repeat the sweet name of Ram. Ram Ram! 🙏";
+  }
 
   // Who is Baba / Tell me about Baba / Biography / Life Story / Lilas
   if (
@@ -555,7 +598,7 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
  * Public API for obtaining Maharaj-ji's response.
  * Passes all output through sanitizeResponse to guarantee zero em dashes, en dashes, or double hyphens.
  */
-export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
-  const reply = await computeMaharajjiReply(userQuery, lang);
+export async function getMaharajjiReply(userQuery: string, lang: Lang, history: Message[] = []): Promise<string> {
+  const reply = await computeMaharajjiReply(userQuery, lang, history);
   return sanitizeResponse(reply);
 }
