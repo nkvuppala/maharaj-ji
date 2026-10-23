@@ -165,7 +165,7 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
           </div>
 
           <h2 className="max-w-xl font-display text-xl font-semibold leading-relaxed text-foreground-deep sm:text-3xl">
-            Radhe Radhe, my child.
+            Ram Ram, my child.
           </h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground sm:text-base">
             What weighs on your heart today?

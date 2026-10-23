@@ -269,42 +269,66 @@ function isHindiSpeech(query: string, lang: Lang): boolean {
   return words.some((w) => HINDI_TOKENS.includes(w));
 }
 
+import { retrieveContext } from './voyageRAG';
+import { getSystemPromptWithContext } from './systemPrompt';
+import { checkGuardrails } from './guardrails';
+
 export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
   const query = userQuery.toLowerCase().trim();
   const isHindi = isHindiSpeech(query, lang);
 
-  // 1. Check if user configured an actual Groq API key in local storage
-  const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
-  if (savedKey && savedKey.startsWith("gsk_")) {
+  // 0. Zero-Token Guardrails: Intercept political, technical, spam, or worldly queries immediately
+  const guard = checkGuardrails(userQuery);
+  if (guard.blocked && guard.reply) {
+    console.log(`[Guardrails] Intercepted query (${guard.category}) without burning tokens`);
+    return guard.reply;
+  }
+
+  // 1. Live RAG Pipeline (Voyage AI voyage-4-large + rerank-3) + Groq Multi-Key Fallback Proxy
+  try {
+    let systemPrompt: string;
     try {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${savedKey}`,
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-20b",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are embodying Neem Karoli Baba (Maharaj-ji). Speak with warmth, brevity (2-4 sentences max), fatherly affection ('beta' or 'my child'), and timeless wisdom. Teachings: Love everyone, serve everyone, remember God, Sub Ek. If the user writes or speaks in Hindi or Hinglish, ALWAYS reply in affectionate Hindi.",
-            },
-            { role: "user", content: userQuery },
-          ],
-          temperature: 0.9,
-          max_tokens: 350,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.choices?.[0]?.message?.content;
-        if (text) return text;
+      const ragResult = await retrieveContext(userQuery);
+      if (ragResult && ragResult.context) {
+        systemPrompt = getSystemPromptWithContext(ragResult.context, ragResult.sources);
+      } else {
+        systemPrompt = getSystemPromptWithContext();
       }
     } catch {
-      /* fallback to local matcher */
+      systemPrompt = getSystemPromptWithContext();
     }
+
+    if (isHindi) {
+      systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: The devotee addressed you in Hindi or Hinglish. Reply in warm, deeply loving, fatherly Hindi (Devanagari script), addressing them gently as 'बेटा'.";
+    }
+
+    const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (savedKey && savedKey.startsWith("gsk_")) {
+      headers["x-groq-key"] = savedKey;
+    }
+
+    const res = await fetch("/api/groq/chat", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userQuery },
+        ],
+        temperature: 0.85,
+        max_tokens: 800,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.choices?.[0]?.message?.content?.trim();
+      if (text) return text;
+    }
+  } catch (apiErr) {
+    console.warn("[Maharaj-ji Live AI] Falling back to local wisdom matcher:", apiErr);
   }
 
   // 2. Intelligent local matcher from trainingData.ts and knowledgeBase.ts
