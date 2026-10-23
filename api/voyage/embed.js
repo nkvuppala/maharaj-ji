@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         input: [query],
-        model: 'voyage-4-large',
+        model: 'voyage-3',
         input_type: 'query',
         output_dimension: 1024,
         truncation: true,
