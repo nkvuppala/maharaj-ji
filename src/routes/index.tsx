@@ -159,7 +159,7 @@ function Index() {
       />
 
       <div ref={streamRef} className="flex-1 overflow-y-auto">
-        <ChatStream messages={messages} typing={typing} onSuggestion={send} />
+        <ChatStream messages={messages} typing={typing} onSuggestion={send} lang={lang} />
       </div>
 
       <InputDock lang={lang} onLangChange={setLang} onSend={send} disabled={typing} />

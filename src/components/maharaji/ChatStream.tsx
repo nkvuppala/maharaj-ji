@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import { Copy, Share2, Volume2 } from "lucide-react";
 import { DiyaIcon, HandsIcon, LotusIcon, MarigoldIcon, OmIcon, TempleIcon } from "./icons";
-import { SUGGESTIONS, type Message } from "@/lib/maharaji";
+import { SUGGESTIONS, type Message, type Lang } from "@/lib/maharaji";
 
 interface ChatStreamProps {
   messages: Message[];
   typing: boolean;
   onSuggestion: (text: string) => void;
+  lang?: Lang;
 }
 
 const SUGGESTION_ICONS: Record<string, React.ReactNode> = {
@@ -51,7 +52,15 @@ function renderFormattedText(text: string) {
   });
 }
 
-export default function ChatStream({ messages, typing, onSuggestion }: ChatStreamProps) {
+const GREETINGS: Record<Lang, { title: string; subtitle: string }> = {
+  en: { title: "Ram Ram, my child.", subtitle: "What weighs on your heart today?" },
+  hi: { title: "राम राम, बेटा।", subtitle: "आज तुम्हारे मन में क्या बात है?" },
+  te: { title: "రామ్ రామ్, నాయనా.", subtitle: "ఈ రోజు మీ హృదయంలో ఏముంది?" },
+  ta: { title: "ராம் ராம், குழந்தையே.", subtitle: "இன்று உங்கள் மனதில் உள்ள பாரம் என்ன?" },
+};
+
+export default function ChatStream({ messages, typing, onSuggestion, lang = "en" }: ChatStreamProps) {
+  const greeting = GREETINGS[lang] || GREETINGS.en;
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const currentUtterRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -165,10 +174,10 @@ export default function ChatStream({ messages, typing, onSuggestion }: ChatStrea
           </div>
 
           <h2 className="max-w-xl font-display text-xl font-semibold leading-relaxed text-foreground-deep sm:text-3xl">
-            Ram Ram, my child.
+            {greeting.title}
           </h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground sm:text-base">
-            What weighs on your heart today?
+            {greeting.subtitle}
           </p>
 
           {/* Parchment suggestion scrolls - perfectly aligned grid */}
