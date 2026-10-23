@@ -2,8 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import Header from "@/components/maharaji/Header";
 import ChatStream from "@/components/maharaji/ChatStream";
 import InputDock from "@/components/maharaji/InputDock";
-import { PrasadModal, JapaModal, MediaDrawer, SettingsSheet, ProposalModal } from "@/components/maharaji/Sheets";
-import { LANGUAGES, createAmbientDrone, getMaharajjiReply, type Lang, type Message } from "@/lib/maharaji";
+import { PrasadModal, JapaModal, MediaDrawer, SettingsSheet, ProposalModal, SoundModal } from "@/components/maharaji/Sheets";
+import {
+  LANGUAGES,
+  AMBIENT_SOUND_OPTIONS,
+  createAmbientSoundEngine,
+  type AmbientSoundId,
+  type Lang,
+  type Message,
+  getMaharajjiReply,
+} from "@/lib/maharaji";
 import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
@@ -33,7 +41,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type SheetKind = "prasad" | "japa" | "media" | "settings" | "proposal" | null;
+type SheetKind = "prasad" | "japa" | "media" | "settings" | "proposal" | "sound" | null;
 
 interface Prefs {
   elder: boolean;
@@ -43,6 +51,8 @@ interface Prefs {
 
 const PREFS_KEY = "maharaji.prefs";
 const CHAT_KEY = "maharaji.chat_history";
+const SOUND_KEY = "maharaji.ambient_sound";
+const VOL_KEY = "maharaji.ambient_vol";
 
 function Index() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,12 +60,14 @@ function Index() {
   const [lang, setLang] = useState<Lang>("en");
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [ambientOn, setAmbientOn] = useState(false);
+  const [ambientSound, setAmbientSound] = useState<AmbientSoundId>("tanpura");
+  const [ambientVolume, setAmbientVolume] = useState<number>(0.6);
   const [toast, setToast] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<Prefs>({ elder: false, contrast: false, reduceMotion: false });
-  const droneRef = useRef<ReturnType<typeof createAmbientDrone> | null>(null);
+  const soundEngineRef = useRef<ReturnType<typeof createAmbientSoundEngine> | null>(null);
   const streamRef = useRef<HTMLDivElement | null>(null);
 
-  // Restore preferences and chat history
+  // Restore preferences, chat history, and ambient sound options
   useEffect(() => {
     try {
       const rawPrefs = localStorage.getItem(PREFS_KEY);
@@ -65,6 +77,19 @@ function Index() {
       if (rawChat) {
         const parsed = JSON.parse(rawChat);
         if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
+      }
+
+      const savedSound = localStorage.getItem(SOUND_KEY) as AmbientSoundId | null;
+      if (savedSound && AMBIENT_SOUND_OPTIONS.some((s) => s.id === savedSound)) {
+        setAmbientSound(savedSound);
+      }
+
+      const savedVol = localStorage.getItem(VOL_KEY);
+      if (savedVol) {
+        const parsedVol = parseFloat(savedVol);
+        if (!isNaN(parsedVol) && parsedVol >= 0 && parsedVol <= 1) {
+          setAmbientVolume(parsedVol);
+        }
       }
     } catch {
       /* fresh device */
@@ -94,7 +119,7 @@ function Index() {
     }
   }, [prefs]);
 
-  useEffect(() => () => droneRef.current?.stop(), []);
+  useEffect(() => () => soundEngineRef.current?.stop(), []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -136,15 +161,38 @@ function Index() {
   };
 
   const toggleAmbient = () => {
-    if (!droneRef.current) droneRef.current = createAmbientDrone();
+    if (!soundEngineRef.current) soundEngineRef.current = createAmbientSoundEngine();
     if (ambientOn) {
-      droneRef.current.stop();
+      soundEngineRef.current.stop();
       setAmbientOn(false);
       showToast("Ambient silence restored 🕉️");
     } else {
-      droneRef.current.start();
+      soundEngineRef.current.setVolume(ambientVolume);
+      soundEngineRef.current.start(ambientSound);
       setAmbientOn(true);
-      showToast("Tanpura drone is playing softly 🔔");
+      const opt = AMBIENT_SOUND_OPTIONS.find((s) => s.id === ambientSound);
+      showToast(`${opt?.name || "Ambient sound"} playing softly 🔔`);
+    }
+  };
+
+  const changeAmbientSound = (id: AmbientSoundId) => {
+    setAmbientSound(id);
+    try {
+      localStorage.setItem(SOUND_KEY, id);
+    } catch {}
+    if (!soundEngineRef.current) soundEngineRef.current = createAmbientSoundEngine();
+    soundEngineRef.current.switchSound(id);
+    const opt = AMBIENT_SOUND_OPTIONS.find((s) => s.id === id);
+    showToast(`Selected: ${opt?.name || id} 🌸`);
+  };
+
+  const changeAmbientVolume = (vol: number) => {
+    setAmbientVolume(vol);
+    try {
+      localStorage.setItem(VOL_KEY, String(vol));
+    } catch {}
+    if (soundEngineRef.current) {
+      soundEngineRef.current.setVolume(vol);
     }
   };
 
@@ -173,6 +221,16 @@ function Index() {
 
       <PrasadModal open={sheet === "prasad"} onClose={() => setSheet(null)} />
       <JapaModal open={sheet === "japa"} onClose={() => setSheet(null)} />
+      <SoundModal
+        open={sheet === "sound"}
+        onClose={() => setSheet(null)}
+        ambientOn={ambientOn}
+        onToggleAmbient={toggleAmbient}
+        selectedSound={ambientSound}
+        onSelectSound={changeAmbientSound}
+        volume={ambientVolume}
+        onVolumeChange={changeAmbientVolume}
+      />
       <MediaDrawer open={sheet === "media"} onClose={() => setSheet(null)} />
       <ProposalModal open={sheet === "proposal"} onClose={() => setSheet(null)} />
       <SettingsSheet

@@ -98,17 +98,34 @@ export default function ChatStream({ messages, typing, onSuggestion, lang = "en"
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const currentUtterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioChunksRef = useRef<string[]>([]);
+  const currentChunkIndexRef = useRef<number>(0);
 
   const stopAudio = () => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.src = "";
+      } catch {}
+      currentAudioRef.current = null;
+    }
+    audioChunksRef.current = [];
+    currentChunkIndexRef.current = 0;
     setSpeakingId(null);
     setIsPaused(false);
     currentUtterRef.current = null;
   };
 
   const pauseAudio = () => {
+    if (currentAudioRef.current && !currentAudioRef.current.paused) {
+      currentAudioRef.current.pause();
+      setIsPaused(true);
+      return;
+    }
     if ("speechSynthesis" in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.pause();
       setIsPaused(true);
@@ -116,31 +133,157 @@ export default function ChatStream({ messages, typing, onSuggestion, lang = "en"
   };
 
   const resumeAudio = () => {
+    if (currentAudioRef.current && currentAudioRef.current.paused) {
+      currentAudioRef.current.play().catch(() => {});
+      setIsPaused(false);
+      return;
+    }
     if ("speechSynthesis" in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
       setIsPaused(false);
     }
   };
 
+  const playIndicAudioStream = (text: string, targetLang: "te" | "ta") => {
+    const rawSentences = text.split(/([।\.\?\!\n]+)/).filter(Boolean);
+    const chunks: string[] = [];
+    let current = "";
+
+    for (let i = 0; i < rawSentences.length; i++) {
+      const part = rawSentences[i].trim();
+      if (!part) continue;
+      if ((current + " " + part).trim().length <= 160) {
+        current = current ? `${current} ${part}` : part;
+      } else {
+        if (current) chunks.push(current);
+        if (part.length <= 160) {
+          current = part;
+        } else {
+          const words = part.split(/\s+/);
+          let sub = "";
+          for (const w of words) {
+            if ((sub + " " + w).trim().length <= 160) {
+              sub = sub ? `${sub} ${w}` : w;
+            } else {
+              if (sub) chunks.push(sub);
+              sub = w;
+            }
+          }
+          current = sub;
+        }
+      }
+    }
+    if (current) chunks.push(current);
+
+    if (chunks.length === 0) {
+      setSpeakingId(null);
+      setIsPaused(false);
+      return;
+    }
+
+    audioChunksRef.current = chunks;
+    currentChunkIndexRef.current = 0;
+
+    const playNext = () => {
+      if (currentChunkIndexRef.current >= audioChunksRef.current.length) {
+        stopAudio();
+        return;
+      }
+
+      const chunk = audioChunksRef.current[currentChunkIndexRef.current];
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${targetLang}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+      const audio = new Audio(url);
+      currentAudioRef.current = audio;
+
+      audio.onended = () => {
+        currentChunkIndexRef.current++;
+        playNext();
+      };
+      audio.onerror = () => {
+        currentChunkIndexRef.current++;
+        if (currentChunkIndexRef.current < audioChunksRef.current.length) {
+          playNext();
+        } else {
+          stopAudio();
+        }
+      };
+
+      audio.play().catch(() => {
+        stopAudio();
+      });
+    };
+
+    playNext();
+  };
+
   const playSpeech = (msg: Message) => {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
+    stopAudio();
 
     // Clean text for speech
     const clean = msg.text
+      .replace(/^#+\s+/gm, "")
       .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/[🙏🕉️🌸✨🔔•]/g, "")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/^[-*•]\s+/gm, "")
+      .replace(/[🙏🕉️🌸✨🔔•#*>]/g, "")
+      .replace(/\s+/g, " ")
       .trim();
 
+    if (!clean) return;
+
+    const hasTelugu = /[\u0C00-\u0C7F]/.test(clean);
+    const hasTamil = /[\u0B80-\u0BFF]/.test(clean);
+    const hasHindi = /[\u0900-\u097F]/.test(clean);
+
+    const isTelugu = lang === "te" || hasTelugu;
+    const isTamil = !isTelugu && (lang === "ta" || hasTamil);
+    const isHindi = !isTelugu && !isTamil && (lang === "hi" || hasHindi);
+
+    // Dedicated Indic neural audio playback for Telugu and Tamil
+    if (isTelugu || isTamil) {
+      const targetLang = isTelugu ? "te" : "ta";
+      setSpeakingId(msg.id);
+      setIsPaused(false);
+
+      const voices = "speechSynthesis" in window ? window.speechSynthesis.getVoices() : [];
+      const matchedVoice = voices.find((v) => {
+        const vLang = v.lang.toLowerCase();
+        const vName = v.name.toLowerCase();
+        if (isTelugu) {
+          return vLang.startsWith("te") || vName.includes("telugu") || vName.includes("తెలుగు");
+        }
+        return vLang.startsWith("ta") || vName.includes("tamil") || vName.includes("தமிழ்");
+      });
+
+      if (matchedVoice && "speechSynthesis" in window) {
+        const utter = new SpeechSynthesisUtterance(clean);
+        utter.voice = matchedVoice;
+        utter.lang = isTelugu ? "te-IN" : "ta-IN";
+        utter.rate = 0.92;
+        utter.pitch = 1.0;
+        utter.onend = () => {
+          setSpeakingId(null);
+          setIsPaused(false);
+          currentUtterRef.current = null;
+        };
+        utter.onerror = () => {
+          playIndicAudioStream(clean, targetLang);
+        };
+        currentUtterRef.current = utter;
+        window.speechSynthesis.speak(utter);
+        return;
+      }
+
+      playIndicAudioStream(clean, targetLang);
+      return;
+    }
+
+    // English and Hindi (Untouched)
+    if (!("speechSynthesis" in window)) return;
     const utter = new SpeechSynthesisUtterance(clean);
 
-    // Multilingual speech detection (Hindi / Dev / Tamil / Telugu / Indian English)
-    if (/[\u0900-\u097F]/.test(msg.text)) {
+    if (isHindi) {
       utter.lang = "hi-IN";
-    } else if (/[\u0C00-\u0C7F]/.test(msg.text)) {
-      utter.lang = "te-IN";
-    } else if (/[\u0B80-\u0BFF]/.test(msg.text)) {
-      utter.lang = "ta-IN";
     } else {
       utter.lang = "en-IN";
     }

@@ -11,6 +11,11 @@ import {
   RotateCcw,
   Sparkles,
   Volume2,
+  VolumeX,
+  Bell,
+  Music,
+  Waves,
+  Flame,
   X,
   FileText,
   Download,
@@ -21,12 +26,14 @@ import {
   ArrowRight,
 } from "lucide-react";
 import {
+  AMBIENT_SOUND_OPTIONS,
   CHALISA_LYRICS,
   EMBEDDED_VIDEOS,
   PRASAD_QUOTES,
   PRASAD_STORIES,
   SACRED_RESOURCES,
   playTempleBell,
+  type AmbientSoundId,
   type VideoMedia,
 } from "@/lib/maharaji";
 import { DiyaIcon, OmIcon } from "./icons";
@@ -329,6 +336,7 @@ function playBeadClick() {
 export const JAPA_MANTRAS = [
   { id: "ram_ram", label: "राम राम", name: "Ram Ram (Pair)", desc: "Each 'Ram Ram' = 1 bead" },
   { id: "sita_ram", label: "सीता राम", name: "Sita Ram", desc: "Each 'Sita Ram' = 1 bead" },
+  { id: "jai_hanuman", label: "जय हनुमान", name: "Jai Hanuman", desc: "Each 'Jai Hanuman' = 1 bead" },
   { id: "ram_single", label: "राम", name: "Ram (Single)", desc: "Each single 'Ram' = 1 bead" },
   { id: "om_namah_shivaya", label: "ॐ नमः शिवाय", name: "Om Namah Shivaya", desc: "Each chant = 1 bead" },
   { id: "hare_krishna", label: "हरे कृष्ण", name: "Hare Krishna", desc: "Each chant = 1 bead" },
@@ -395,6 +403,16 @@ export function parseBeadsFromText(
     return { totalBeads, leftoverTokens, lastChantUnit: "राम राम" };
   }
 
+  if (mantraId === "jai_hanuman") {
+    const invocationRegex = /(?:जय\s*)?(?:बजरंग\s*बली|बजरंगबली|हनुमान\s*जी|पवनपुत्र\s*हनुमान|महावीर\s*हनुमान)|(?:jai|jay)\s*(?:hanuman|bajrang\s*bali|bajrangbali)|(?:shri|shree|sri)\s*hanuman/gi;
+    const invMatches = lower.match(invocationRegex) || text.match(invocationRegex) || [];
+    const devaTokens = (text.match(/(हनुमान|बजरंगबली|बजरंगली|पवनपुत्र)/g) || []).length;
+    const latinTokens = (lower.match(/\b(hanuman|bajrangbali|bajrang|mahavir)\b/gi) || []).length;
+    const singleTokens = Math.max(devaTokens, latinTokens);
+    const totalBeads = leftoverSeed + Math.max(invMatches.length, singleTokens);
+    return { totalBeads, leftoverTokens: 0, lastChantUnit: "जय हनुमान" };
+  }
+
   if (mantraId === "ram_single") {
     const devaTokens = (text.match(/(राम|रामा|राँम|रोम|राम्)/g) || []).length;
     const latinTokens = (lower.match(/\b(ram|rama|raam|raama|rom|roma|roam|rum|ran)\b/gi) || []).length;
@@ -427,10 +445,11 @@ export function parseBeadsFromText(
   // AUTO Mode: Combines any holy chants
   const rPair = (text.match(/(राम\s*राम|रामराम)/g) || lower.match(/(?:ram|rama)\s+(?:ram|rama)/g) || []).length;
   const sita = (text.match(/(सीता\s*राम|सिया\s*राम)/g) || lower.match(/\b(sita\s*ram|siya\s*ram)\b/g) || []).length;
+  const hanuman = (text.match(/(जय\s*हनुमान|जय\s*बजरंगबली|हनुमान)/g) || lower.match(/\b(jai\s*hanuman|hanuman|bajrangbali)\b/g) || []).length;
   const shiv = (text.match(/(ॐ\s*नमः\s*शिवाय|हर\s*हर\s*महादेव)/g) || lower.match(/\b(om\s*namah\s*shivay[a]?|har\s*har\s*mahadev)\b/g) || []).length;
   const krish = (text.match(/(हरे\s*कृष्ण|हरे\s*राम|राधे\s*कृष्ण)/g) || lower.match(/\b(hare\s*krishna|hare\s*rama)\b/g) || []).length;
-  const single = (text.match(/(राम|कृष्ण|शिव|हनुमान)/g) || lower.match(/\b(ram|krishna|shiva|hanuman)\b/g) || []).length;
-  const autoBeads = rPair + sita + shiv + krish + Math.floor(single / 2);
+  const single = (text.match(/(राम|कृष्ण|शिव)/g) || lower.match(/\b(ram|krishna|shiva)\b/g) || []).length;
+  const autoBeads = rPair + sita + hanuman + shiv + krish + Math.floor(single / 2);
   return { totalBeads: autoBeads, leftoverTokens: 0, lastChantUnit: "राम राम" };
 }
 
@@ -1531,5 +1550,202 @@ We want to make this platform:
 - Phase 3 (Next): Connect the AI story finder to old devotee books for 365 daily stories.
 - Phase 4 (Final): Launch on custom website domain and installable phone app (PWA).
 `;
+
+/* ---------- Ashram Soundscapes Modal ---------- */
+
+export function SoundModal({
+  open,
+  onClose,
+  ambientOn,
+  onToggleAmbient,
+  selectedSound,
+  onSelectSound,
+  volume,
+  onVolumeChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  ambientOn: boolean;
+  onToggleAmbient: () => void;
+  selectedSound: AmbientSoundId;
+  onSelectSound: (id: AmbientSoundId) => void;
+  volume: number;
+  onVolumeChange: (vol: number) => void;
+}) {
+  return (
+    <Overlay open={open} onClose={onClose}>
+      <div className="flex flex-col gap-5">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-marigold/30 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="halo flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-primary">
+              <Bell className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-semibold text-foreground-deep">
+                Ashram Soundscapes (आश्रम नाद)
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Sacred meditative sounds synthesized with pure Web Audio
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close sound modal"
+            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Master Power Switch Card */}
+        <div className="flex items-center justify-between rounded-2xl bg-secondary/70 p-4 border border-marigold/40">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-colors ${
+                ambientOn
+                  ? "bg-gradient-to-br from-saffron to-terracotta text-white shadow-md shadow-saffron/30"
+                  : "bg-walnut/10 text-walnut/50"
+              }`}
+            >
+              {ambientOn ? <Waves className="h-6 w-6 animate-pulse" /> : <VolumeX className="h-6 w-6" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-display text-sm font-semibold text-foreground">
+                  Ambient Audio: {ambientOn ? "Active" : "Silent"}
+                </span>
+                {ambientOn && (
+                  <span className="inline-flex items-center rounded-full bg-saffron/15 px-2 py-0.5 text-[10px] font-bold text-saffron uppercase">
+                    Playing
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {ambientOn
+                  ? `Vibrating with ${AMBIENT_SOUND_OPTIONS.find((s) => s.id === selectedSound)?.name}`
+                  : "Tap turn on to immerse your room in peaceful ashram vibrations"}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onToggleAmbient}
+            className={`rounded-full px-4 py-2 text-xs font-bold transition-all shadow-sm ${
+              ambientOn
+                ? "bg-amber-glow text-walnut border border-marigold/60 hover:bg-amber-glow/80"
+                : "bg-gradient-to-r from-saffron to-terracotta text-white hover:brightness-105 hover:scale-105"
+            }`}
+          >
+            {ambientOn ? "Mute Silence" : "Turn On"}
+          </button>
+        </div>
+
+        {/* Volume Slider Card */}
+        <div className="rounded-2xl bg-secondary/40 p-3.5 border border-marigold/20">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
+              <Volume2 className="h-4 w-4 text-primary" /> Volume Level
+            </span>
+            <span className="text-xs font-bold text-primary">
+              {Math.round(volume * 100)}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+            className="w-full accent-saffron cursor-pointer"
+            aria-label="Ambient volume"
+          />
+        </div>
+
+        {/* Sound Selection Grid */}
+        <div>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
+              Select Soundscape
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Instant offline synthesis
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {AMBIENT_SOUND_OPTIONS.map((opt) => {
+              const active = selectedSound === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => {
+                    onSelectSound(opt.id);
+                    if (!ambientOn) onToggleAmbient();
+                  }}
+                  className={`flex items-start justify-between rounded-2xl p-3.5 text-left transition-all border ${
+                    active
+                      ? "bg-amber-glow/60 border-marigold shadow-md scale-[1.01]"
+                      : "bg-card border-marigold/20 hover:bg-secondary/60 hover:border-marigold/40"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                        active
+                          ? "bg-gradient-to-br from-saffron to-terracotta text-white shadow-sm"
+                          : "bg-secondary text-primary"
+                      }`}
+                    >
+                      {opt.id === "tanpura" && <Music className="h-4 w-4" />}
+                      {opt.id === "om" && <OmIcon className="h-4 w-4" />}
+                      {opt.id === "bells" && <Bell className="h-4 w-4" />}
+                      {opt.id === "river" && <Waves className="h-4 w-4" />}
+                      {opt.id === "aarti" && <Flame className="h-4 w-4" />}
+                    </span>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-sm font-bold text-foreground">
+                          {opt.name}
+                        </span>
+                        <span className="text-[11px] font-medium text-muted-foreground/80">
+                          ({opt.hindiName})
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                        {opt.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1.5 shrink-0 pl-2">
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-walnut/70 uppercase">
+                      {opt.badge}
+                    </span>
+                    {active && ambientOn && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-saffron animate-pulse">
+                        <Check className="h-3.5 w-3.5" /> Playing
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer Spiritual Note */}
+        <div className="rounded-xl bg-secondary/30 p-3 text-center border border-marigold/20">
+          <p className="text-xs text-muted-foreground italic">
+            "Sub Ek. In holy silence or sacred sound, keep Ram in your heart." [Neem Karoli Baba] 🙏
+          </p>
+        </div>
+      </div>
+    </Overlay>
+  );
+}
 
 

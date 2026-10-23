@@ -169,59 +169,334 @@ export const SACRED_RESOURCES = [
   },
 ];
 
-/** Soft tanpura-like ambient drone, built with the Web Audio API (no assets needed). */
-export function createAmbientDrone() {
-  let ctx: AudioContext | null = null;
-  let nodes: (OscillatorNode | GainNode)[] = [];
+export type AmbientSoundId = "tanpura" | "om" | "bells" | "river" | "aarti";
 
-  const start = () => {
-    if (ctx) return;
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    ctx = new AudioCtx();
-    const master = ctx.createGain();
-    master.gain.value = 0;
-    master.connect(ctx.destination);
-    master.gain.linearRampToValueAtTime(0.045, ctx.currentTime + 2.5);
-    // Sa & Pa drone (tanpura feel: D fundamental, A fifth, octave D)
-    [146.83, 220.0, 293.66].forEach((freq, i) => {
-      const osc = ctx!.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      const g = ctx!.createGain();
-      g.gain.value = i === 0 ? 0.9 : 0.5;
-      const lfo = ctx!.createOscillator();
-      lfo.frequency.value = 0.08 + i * 0.03;
-      const lfoGain = ctx!.createGain();
-      lfoGain.gain.value = 0.35;
-      lfo.connect(lfoGain);
-      lfoGain.connect(g.gain);
-      osc.connect(g);
-      g.connect(master);
-      osc.start();
-      lfo.start();
-      nodes.push(osc, lfo, g);
+export interface AmbientSoundOption {
+  id: AmbientSoundId;
+  name: string;
+  hindiName: string;
+  desc: string;
+  badge: string;
+}
+
+export const AMBIENT_SOUND_OPTIONS: AmbientSoundOption[] = [
+  {
+    id: "tanpura",
+    name: "Meditative Tanpura Drone",
+    hindiName: "तानपुरा नाद",
+    desc: "Sacred Sa-Pa drone (146.8Hz / 220Hz / 293.6Hz) with rich classical overtone swells.",
+    badge: "Classical",
+  },
+  {
+    id: "om",
+    name: "Cosmic Om Drone (136.1 Hz)",
+    hindiName: "ॐ ओंकार प्रणव",
+    desc: "Ancient cosmic Earth Year frequency with deep sub-bass resonance and calming theta pulse.",
+    badge: "Cosmic",
+  },
+  {
+    id: "bells",
+    name: "Kainchi Temple Bells & Chimes",
+    hindiName: "मंदिर घंटियाँ",
+    desc: "Harmonic 528Hz Solfeggio miracle tone bell chimes resonating into the Himalayan breeze.",
+    badge: "Temple",
+  },
+  {
+    id: "river",
+    name: "Sacred Ganga River & Water",
+    hindiName: "गंगा जल प्रवाह",
+    desc: "Organic pink-filtered mountain stream flow and soothing rushing sacred river waters.",
+    badge: "Nature",
+  },
+  {
+    id: "aarti",
+    name: "Evening Aarti & Shankha Conch",
+    hindiName: "शंख व सांध्य आरती",
+    desc: "Sacred brass conch shell drone and deep harmonic singing bowl resonance of Kainchi Dham.",
+    badge: "Aarti",
+  },
+];
+
+/** Multi-preset ambient soundscapes built with Web Audio API (zero external assets needed). */
+export function createAmbientSoundEngine() {
+  let ctx: AudioContext | null = null;
+  let activeSound: AmbientSoundId = "tanpura";
+  let currentVolume: number = 0.6;
+  let isPlaying: boolean = false;
+  let cleanupFns: (() => void)[] = [];
+  let masterGainNode: GainNode | null = null;
+
+  const getAudioContext = () => {
+    if (!ctx) {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      ctx = new AudioCtx();
+    }
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  };
+
+  const clearCurrent = () => {
+    cleanupFns.forEach((fn) => {
+      try {
+        fn();
+      } catch {}
     });
-    nodes.push(master);
+    cleanupFns = [];
+  };
+
+  const buildSynth = (sound: AmbientSoundId, masterGain: GainNode, audioCtx: AudioContext) => {
+    if (sound === "tanpura") {
+      // Sa and Pa drone (D fundamental, A fifth, octave D)
+      [146.83, 220.0, 293.66].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const g = audioCtx.createGain();
+        g.gain.value = i === 0 ? 0.9 : 0.5;
+        const lfo = audioCtx.createOscillator();
+        lfo.frequency.value = 0.08 + i * 0.03;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 0.35;
+        lfo.connect(lfoGain);
+        lfoGain.connect(g.gain);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start();
+        lfo.start();
+        cleanupFns.push(() => {
+          try {
+            osc.stop();
+            lfo.stop();
+          } catch {}
+        });
+      });
+    } else if (sound === "om") {
+      // Sacred Om 136.1Hz fundamental with rich harmonics and gentle theta beat
+      const freqs = [136.1, 137.5, 272.2, 408.3];
+      const gains = [0.9, 0.45, 0.3, 0.15];
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 520;
+      lp.Q.value = 1.0;
+      lp.connect(masterGain);
+
+      freqs.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        osc.type = idx % 2 === 0 ? "sine" : "triangle";
+        osc.frequency.value = freq;
+        const g = audioCtx.createGain();
+        g.gain.value = gains[idx];
+        const lfo = audioCtx.createOscillator();
+        lfo.frequency.value = 0.05 + idx * 0.02;
+        const lfoG = audioCtx.createGain();
+        lfoG.gain.value = 0.2;
+        lfo.connect(lfoG);
+        lfoG.connect(g.gain);
+        osc.connect(g);
+        g.connect(lp);
+        osc.start();
+        lfo.start();
+        cleanupFns.push(() => {
+          try {
+            osc.stop();
+            lfo.stop();
+          } catch {}
+        });
+      });
+    } else if (sound === "bells") {
+      // Periodic temple bell chime + subtle warm background pad
+      const basePad = audioCtx.createOscillator();
+      basePad.type = "sine";
+      basePad.frequency.value = 176;
+      const baseG = audioCtx.createGain();
+      baseG.gain.value = 0.25;
+      basePad.connect(baseG);
+      baseG.connect(masterGain);
+      basePad.start();
+      cleanupFns.push(() => {
+        try {
+          basePad.stop();
+        } catch {}
+      });
+
+      const strikeBell = () => {
+        if (!isPlaying || !ctx) return;
+        const bellTones = [528, 1056, 1584, 2112];
+        const now = audioCtx.currentTime;
+        bellTones.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.998, now + 3.0);
+          const initialVol = 0.18 / (i + 1);
+          g.gain.setValueAtTime(initialVol, now);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 3.5);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 3.6);
+        });
+      };
+
+      strikeBell();
+      const intervalId = window.setInterval(strikeBell, 4200);
+      cleanupFns.push(() => clearInterval(intervalId));
+    } else if (sound === "river") {
+      // Natural pink-filtered noise simulating mountain water stream
+      const bufferSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.04;
+        b6 = white * 0.115926;
+      }
+      const noiseSource = audioCtx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
+      noiseSource.loop = true;
+
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 650;
+      bp.Q.value = 1.2;
+
+      // Slow wave modulation
+      const mod = audioCtx.createOscillator();
+      mod.frequency.value = 0.22;
+      const modGain = audioCtx.createGain();
+      modGain.gain.value = 220;
+      mod.connect(modGain);
+      modGain.connect(bp.frequency);
+
+      noiseSource.connect(bp);
+      bp.connect(masterGain);
+      noiseSource.start();
+      mod.start();
+
+      cleanupFns.push(() => {
+        try {
+          noiseSource.stop();
+          mod.stop();
+        } catch {}
+      });
+    } else if (sound === "aarti") {
+      // Sacred Shankha (conch) and singing bowl harmonics
+      [216, 432, 648].forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        osc.type = idx === 0 ? "triangle" : "sine";
+        osc.frequency.value = freq;
+        const g = audioCtx.createGain();
+        g.gain.value = 0.5 / (idx + 1);
+        const lfo = audioCtx.createOscillator();
+        lfo.frequency.value = 0.06 + idx * 0.02;
+        const lfoG = audioCtx.createGain();
+        lfoG.gain.value = 0.25;
+        lfo.connect(lfoG);
+        lfoG.connect(g.gain);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start();
+        lfo.start();
+        cleanupFns.push(() => {
+          try {
+            osc.stop();
+            lfo.stop();
+          } catch {}
+        });
+      });
+
+      // Singing bowl chime every 6.2s
+      const ringBowl = () => {
+        if (!isPlaying || !ctx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(432, now);
+        g.gain.setValueAtTime(0.2, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 4.8);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 5.0);
+      };
+      ringBowl();
+      const bowlId = window.setInterval(ringBowl, 6200);
+      cleanupFns.push(() => clearInterval(bowlId));
+    }
+  };
+
+  const start = (sound?: AmbientSoundId) => {
+    if (sound) activeSound = sound;
+    const audioCtx = getAudioContext();
+    clearCurrent();
+
+    masterGainNode = audioCtx.createGain();
+    masterGainNode.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    masterGainNode.gain.linearRampToValueAtTime(0.05 * currentVolume, audioCtx.currentTime + 1.8);
+    masterGainNode.connect(audioCtx.destination);
+
+    buildSynth(activeSound, masterGainNode, audioCtx);
+    isPlaying = true;
   };
 
   const stop = () => {
-    if (!ctx) return;
+    if (!ctx || !isPlaying) return;
     const closing = ctx;
-    nodes.forEach((n) => {
+    if (masterGainNode) {
       try {
-        if ("stop" in n) n.stop(closing.currentTime + 1.2);
-      } catch {
-        /* already stopped */
-      }
-    });
-    nodes = [];
-    ctx = null;
-    setTimeout(() => closing.close(), 1500);
+        masterGainNode.gain.linearRampToValueAtTime(0.0001, closing.currentTime + 0.8);
+      } catch {}
+    }
+    setTimeout(() => {
+      clearCurrent();
+      try {
+        closing.close();
+      } catch {}
+      ctx = null;
+      masterGainNode = null;
+    }, 1000);
+    isPlaying = false;
   };
 
-  return { start, stop };
+  const switchSound = (sound: AmbientSoundId) => {
+    activeSound = sound;
+    if (isPlaying) {
+      start(sound);
+    }
+  };
+
+  const setVolume = (vol: number) => {
+    currentVolume = Math.max(0, Math.min(1, vol));
+    if (masterGainNode && ctx) {
+      try {
+        masterGainNode.gain.setValueAtTime(0.05 * currentVolume, ctx.currentTime);
+      } catch {}
+    }
+  };
+
+  const getActiveSound = () => activeSound;
+  const getVolume = () => currentVolume;
+  const getIsPlaying = () => isPlaying;
+
+  return { start, stop, switchSound, setVolume, getActiveSound, getVolume, getIsPlaying };
+}
+
+/** Backward compatible helper */
+export function createAmbientDrone() {
+  return createAmbientSoundEngine();
 }
 
 /** Play a sacred temple bell chime on Mala (108) completion */

@@ -5,7 +5,7 @@ import portrait from "@/assets/maharaji-portrait.jpg";
 interface HeaderProps {
   ambientOn: boolean;
   onToggleAmbient: () => void;
-  onOpen: (kind: "prasad" | "japa" | "media" | "settings" | "proposal") => void;
+  onOpen: (kind: "prasad" | "japa" | "media" | "settings" | "proposal" | "sound") => void;
 }
 
 const WAVE_BARS = [0, 1, 2, 3];
@@ -77,7 +77,7 @@ export default function Header({ ambientOn, onToggleAmbient, onOpen }: HeaderPro
           <span className="text-[11px] text-walnut font-medium hidden md:inline xl:hidden">Prasad</span>
         </HeaderPill>
 
-        <HeaderPill icon={<Bell className="h-4 w-4" />} label="Sound" onClick={onToggleAmbient} active={ambientOn}>
+        <HeaderPill icon={<Bell className="h-4 w-4" />} label="Sound" onClick={() => onOpen("sound")} active={ambientOn}>
           {ambientOn && (
             <span className="flex h-3.5 items-end gap-[2px]" aria-hidden="true">
               {WAVE_BARS.map((i) => (
