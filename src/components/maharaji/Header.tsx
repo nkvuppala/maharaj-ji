@@ -1,11 +1,11 @@
-import { Bell, MonitorPlay, Settings, Flower2, FileText } from "lucide-react";
+import { Bell, MonitorPlay, Settings, Flower2 } from "lucide-react";
 import { JapaIcon } from "./icons";
 import portrait from "@/assets/maharaji-portrait.jpg";
 
 interface HeaderProps {
   ambientOn: boolean;
   onToggleAmbient: () => void;
-  onOpen: (kind: "prasad" | "japa" | "media" | "settings" | "proposal" | "sound") => void;
+  onOpen: (kind: "prasad" | "japa" | "media" | "settings" | "sound") => void;
 }
 
 const WAVE_BARS = [0, 1, 2, 3];
@@ -98,18 +98,6 @@ export default function Header({ ambientOn, onToggleAmbient, onOpen }: HeaderPro
 
         <HeaderPill icon={<MonitorPlay className="h-4 w-4" />} label="Media" onClick={() => onOpen("media")}>
           <span className="text-[11px] text-walnut font-medium hidden md:inline xl:hidden">Media</span>
-        </HeaderPill>
-
-        <HeaderPill
-          icon={<FileText className="h-4 w-4" />}
-          label="Proposal"
-          onClick={() => onOpen("proposal")}
-          highlight={true}
-        >
-          <span className="text-[11px] text-saffron font-bold md:inline">Proposal</span>
-          <span className="rounded-full bg-saffron text-white px-1.5 py-0.2 text-[9px] font-extrabold uppercase shadow-xs">
-            Demo
-          </span>
         </HeaderPill>
 
         <HeaderPill icon={<Settings className="h-4 w-4" />} label="Settings" onClick={() => onOpen("settings")} />

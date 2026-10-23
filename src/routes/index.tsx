@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import Header from "@/components/maharaji/Header";
 import ChatStream from "@/components/maharaji/ChatStream";
 import InputDock from "@/components/maharaji/InputDock";
-import { PrasadModal, JapaModal, MediaDrawer, SettingsSheet, ProposalModal, SoundModal } from "@/components/maharaji/Sheets";
+import { PrasadModal, JapaModal, MediaDrawer, SettingsSheet, SoundModal } from "@/components/maharaji/Sheets";
 import {
   LANGUAGES,
   AMBIENT_SOUND_OPTIONS,
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type SheetKind = "prasad" | "japa" | "media" | "settings" | "proposal" | "sound" | null;
+type SheetKind = "prasad" | "japa" | "media" | "settings" | "sound" | null;
 
 interface Prefs {
   elder: boolean;
@@ -232,7 +232,6 @@ function Index() {
         onVolumeChange={changeAmbientVolume}
       />
       <MediaDrawer open={sheet === "media"} onClose={() => setSheet(null)} />
-      <ProposalModal open={sheet === "proposal"} onClose={() => setSheet(null)} />
       <SettingsSheet
         open={sheet === "settings"}
         onClose={() => setSheet(null)}
