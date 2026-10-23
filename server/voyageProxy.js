@@ -10,13 +10,39 @@
  *   Dynamically re-reads .env so keys added at runtime are picked up immediately.
  */
 
-import { config, parse } from 'dotenv';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 
+function parseEnvFile(filePath) {
+  const result = {};
+  if (!existsSync(filePath)) return result;
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        result[key] = val;
+      }
+    }
+  } catch (err) {
+    console.warn('[proxy] Could not read env file:', err.message);
+  }
+  return result;
+}
+
 export default function voyageProxyPlugin() {
   const envPath = resolve(process.cwd(), '.env');
-  config({ path: envPath, override: true });
+  const fileEnv = parseEnvFile(envPath);
+  for (const [k, v] of Object.entries(fileEnv)) {
+    if (!process.env[k]) process.env[k] = v;
+  }
 
   /**
    * Dynamically fetch all active Groq keys from .env and optional client override
@@ -31,14 +57,10 @@ export default function voyageProxyPlugin() {
 
     // Read live from .env so user can add GROQ_API_KEY2/3 without server restart
     if (existsSync(envPath)) {
-      try {
-        const parsed = parse(readFileSync(envPath, 'utf-8'));
-        if (parsed.GROQ_API_KEY) rawKeys.push(parsed.GROQ_API_KEY.trim());
-        if (parsed.GROQ_API_KEY2) rawKeys.push(parsed.GROQ_API_KEY2.trim());
-        if (parsed.GROQ_API_KEY3) rawKeys.push(parsed.GROQ_API_KEY3.trim());
-      } catch (err) {
-        console.warn('[groq-proxy] Failed to parse .env file:', err.message);
-      }
+      const parsed = parseEnvFile(envPath);
+      if (parsed.GROQ_API_KEY) rawKeys.push(parsed.GROQ_API_KEY.trim());
+      if (parsed.GROQ_API_KEY2) rawKeys.push(parsed.GROQ_API_KEY2.trim());
+      if (parsed.GROQ_API_KEY3) rawKeys.push(parsed.GROQ_API_KEY3.trim());
     }
 
     // Fallback to process.env
