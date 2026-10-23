@@ -442,3 +442,94 @@ export function getUniversalFallback(lang: SupportedLang = 'en'): string {
   const pool = CANNED_RESPONSES.universal_fallback[lang] || CANNED_RESPONSES.universal_fallback.en;
   return pool[Math.floor(Math.random() * pool.length)];
 }
+
+/**
+ * Returns a category-specific canned deflection in the user's chosen language.
+ */
+export function getCannedDeflection(category: string = 'universal_fallback', lang: SupportedLang = 'en'): string {
+  const validCat = (category in CANNED_RESPONSES)
+    ? (category as keyof typeof CANNED_RESPONSES)
+    : 'universal_fallback';
+  const pool = CANNED_RESPONSES[validCat][lang] || CANNED_RESPONSES[validCat].en;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/**
+ * Automatically maps a worldly query to the most appropriate canned deflection category
+ * and returns a localized response.
+ */
+export function getCannedDeflectionForQuery(userQuery: string, lang: SupportedLang = 'en'): string {
+  const q = userQuery.toLowerCase();
+  if (/\b(president|prime\s*minister|minister|senator|governor|secretary|election|party|government|parliament|clinton|trump|biden|modi|macron|sunak|politics|political)\b/i.test(q)) {
+    return getCannedDeflection('politics', lang);
+  }
+  if (/\b(stock|share|crypto|bitcoin|btc|eth|market|money|invest|wealth|lottery|rich)\b/i.test(q)) {
+    return getCannedDeflection('finance', lang);
+  }
+  if (/\b(code|coding|python|javascript|java|c\+\+|program|math|equation|calculate|homework)\b/i.test(q)) {
+    return getCannedDeflection('coding_math', lang);
+  }
+  if (/\b(cricket|football|soccer|score|match|game|movie|film|actor|actress|bollywood|celebrity|gossip)\b/i.test(q)) {
+    return getCannedDeflection('sports_gossip', lang);
+  }
+  if (/\b(api|llm|model|prompt|server|voyage|groq|openai|token)\b/i.test(q)) {
+    return getCannedDeflection('technical', lang);
+  }
+  if (/\b(weather|temperature|flight|ticket|hotel|train|capital\s*of|recipe)\b/i.test(q)) {
+    return getCannedDeflection('trivia_commercial', lang);
+  }
+  return getCannedDeflection('politics', lang);
+}
+
+/**
+ * Fast-path heuristic to identify clearly spiritual, emotional, or Maharaj-ji queries.
+ * When true, the query bypasses Groq semantic classification and directly proceeds to
+ * Voyage RAG and synthesis with zero added latency.
+ */
+export function isExplicitlySpiritual(userQuery: string): boolean {
+  const q = userQuery.toLowerCase().trim();
+
+  // 1. Holy names, Gurus, Avatars, Temples, Ashrams
+  if (/\b(baba|babaji|maharaj|maharajji|neem\s*karoli|kainchi|hanuman|hanumanji|bajrangbali|pawanputra|anjaneya|ram|rama|sita|lakshman|laxman|krishna|shiva|shankar|mahadev|radha|vishnu|ganesh|guru|guruji|saint|sadhu|swami|ashram|temple|mandir|dham|vrindavan|haridwar|rishikesh)\b/i.test(q)) {
+    return true;
+  }
+
+  // 2. Chants, Scriptures, Prayers, Sacred Literature
+  if (/\b(chalisa|aarti|bhajan|kirtan|doha|dohavali|ramayana|ramcharitmanas|gita|bhagavad|upanishad|veda|shloka|mantra|stotra|prasad|sundarkand|tulsidas|tulsi\s*das)\b/i.test(q)) {
+    return true;
+  }
+
+  // 3. Spiritual concepts, Inner life, Emotions, Dilemmas, Virtues
+  if (/\b(peace|inner\s*peace|shanti|worry|worried|anxiety|anxious|fear|scared|depressed|depression|sad|sadness|grief|sorrow|pain|cry|crying|lonely|loneliness|guilt|guilty|hurt|suffer|suffering|anger|angry|forgive|forgiveness|compassion|love|serve|service|seva|feed|hungry|truth|surrender|faith|bhakti|devotion|meditation|meditate|prayer|pray|god|lord|divine|soul|atman|karma|dharma|moksha|mukti|death|dying|reincarnation|rebirth|maya|sub\s*ek|all\s*is\s*one|blessing|bless|kripa|grace)\b/i.test(q)) {
+    return true;
+  }
+
+  // 4. Devanagari script spiritual keywords
+  if (/[\u0900-\u097F]/.test(userQuery)) {
+    if (/(बाबा|महाराज|नीब|करौरी|कैंची|हनुमान|राम|सीता|कृष्ण|शिव|ईश्वर|भगवान|गुरु|आश्रम|मंदिर|धाम|चालीसा|आरती|भजन|कीर्तन|दोहा|दोहावली|प्रसाद|शांति|दुख|दर्द|चिंता|भय|क्रोध|प्रेम|सेवा|भक्ति|प्रार्थना|ध्यान|मोक्ष|कर्म|धर्म|कृपा|आशीर्वाद|सब\s*एक)/.test(userQuery)) {
+      return true;
+    }
+  }
+
+  // 5. Telugu spiritual keywords
+  if (/[\u0C00-\u0C7F]/.test(userQuery)) {
+    if (/(బాబా|మహారాజ్|హనుమాన్|రాముడు|రామ్|గురువు|ఆశ్రమం|దేవుడు|శాంతి|భక్తి|ప్రార్థన|ధ్యానం|సేవ|ప్రేమ|దీవెన|కృప)/.test(userQuery)) {
+      return true;
+    }
+  }
+
+  // 6. Tamil spiritual keywords
+  if (/[\u0B80-\u0BFF]/.test(userQuery)) {
+    if (/(பாபா|மகாராஜ்|அனுமன்|ராமர்|ராம்|குரு|ஆசிரமம்|கடவுள்|அமைதி|பக்தி|பிரார்த்தனை|தியானம்|சேவை|அன்பு|ஆசி|கருணை)/.test(userQuery)) {
+      return true;
+    }
+  }
+
+  // 7. Well-known devotee questions and phrases
+  if (/\b(who\s*am\s*i|meaning\s*of\s*life|how\s*to\s*live|teach\s*me|guide\s*me|bless\s*me|show\s*me\s*the\s*way|path\s*to\s*god|how\s*to\s*find\s*god|ram\s*dass|larry\s*brilliant|k_k_sah|siddhi\s*ma|jeeb)\b/i.test(q)) {
+    return true;
+  }
+
+  return false;
+}
+

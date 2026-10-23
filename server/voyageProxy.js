@@ -37,6 +37,19 @@ function parseEnvFile(filePath) {
   return result;
 }
 
+function isOffTopicQuery(text) {
+  if (!text || typeof text !== 'string') return false;
+  const userText = text.trim().toLowerCase();
+  const isPolitics = /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm|governor|senator|secretary\s*of\s*state)|rahul\s*gandhi|bjp|congress|election|elections|who\s*will\s*win|donald\s*trump|trump|biden|putin|zelensky|clinton|hillary|hilary|obama|bush|sunak|trudeau|macron|merkel|netanyahu|kamala|desantis|senator|governor|secretary\s*of\s*state|white\s*house|parliament|democrat|republican)\b/i.test(userText);
+  const isTech = /\b(what\s*api|which\s*api|api\s*key|system\s*prompt|groq|voyage|openai|anthropic|claude|chatgpt|llm|what\s*model|source\s*code|github|who\s*coded\s*you|who\s*programmed\s*you|ignore\s*previous\s*instructions|jailbreak|dan\s*mode|embeddings?|rerank)\b/i.test(userText);
+  const isCodingMath = /\b(write\s*(a\s*)?(python|javascript|typescript|c\+\+|java|react|code|script)|debug\s*code|solve\s*(this\s*)?equation|calculate|write\s*an\s*essay|homework)\b/i.test(userText);
+  const isFinance = /\b(stock\s*price|share\s*market|nifty|sensex|buy\s*shares|crypto|bitcoin|btc|ethereum|eth|lottery|betting|satta)\b/i.test(userText);
+  const isSportsGossip = /\b(cricket\s*score|who\s*won\s*the\s*match|ipl\s*score|world\s*cup|bollywood\s*gossip|box\s*office|movie\s*review)\b/i.test(userText);
+  const isTrivia = /\b(weather\s*(in|today)|capital\s*of|flight\s*ticket|train\s*timing|hotel\s*booking)\b/i.test(userText);
+  const isAbuse = /\b(fuck|bitch|bastard|asshole|idiot|madarchod|behenchod|bhosdike|chutiya|fraud\s*baba)\b/i.test(userText);
+  return isPolitics || isTech || isCodingMath || isFinance || isSportsGossip || isTrivia || isAbuse;
+}
+
 export default function voyageProxyPlugin() {
   const envPath = resolve(process.cwd(), '.env');
   const fileEnv = parseEnvFile(envPath);
@@ -323,6 +336,12 @@ export default function voyageProxyPlugin() {
             return res.end(JSON.stringify({ error: 'Missing "query" string in body' }));
           }
 
+          if (isOffTopicQuery(query)) {
+            console.log(`🛡️ [Voyage Proxy] Skipped embeddings for worldly off-topic query: "${query.slice(0, 45)}"`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ embedding: null, deflected: true }));
+          }
+
           const voyageRes = await fetch('https://api.voyageai.com/v1/embeddings', {
             method: 'POST',
             headers: {
@@ -370,6 +389,12 @@ export default function voyageProxyPlugin() {
           if (!query || !documents || !Array.isArray(documents)) {
             res.writeHead(400, { 'Content-Type': 'application/json' });
             return res.end(JSON.stringify({ error: 'Missing "query" string and "documents" array in body' }));
+          }
+
+          if (isOffTopicQuery(query)) {
+            console.log(`🛡️ [Voyage Proxy] Skipped rerank for worldly off-topic query: "${query.slice(0, 45)}"`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ results: [], deflected: true }));
           }
 
           const voyageRes = await fetch('https://api.voyageai.com/v1/rerank', {

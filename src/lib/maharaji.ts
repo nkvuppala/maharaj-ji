@@ -277,7 +277,7 @@ function isHindiSpeech(query: string, lang: Lang): boolean {
 
 import { retrieveContext } from './voyageRAG';
 import { getSystemPromptWithContext } from './systemPrompt';
-import { checkGuardrails, getUniversalFallback } from './guardrails';
+import { checkGuardrails, getUniversalFallback, getCannedDeflectionForQuery, isExplicitlySpiritual } from './guardrails';
 
 /**
  * Programmatic sanitizer that completely removes any em dash, en dash,
@@ -291,6 +291,65 @@ export function sanitizeResponse(text: string): string {
     .replace(/,\s*,/g, ",")
     .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+/**
+ * Tier 2: Groq Semantic Intent Classifier
+ * Evaluates ambiguous or non-obvious queries using Groq's fast LLM before calling Voyage.
+ * If the query is off-topic (politics, secular trivia, coding, finance, sports, gossip),
+ * it returns 'WORLDLY', allowing us to skip Voyage AI RAG completely and save tokens.
+ */
+async function classifyIntentWithGroq(userQuery: string): Promise<"SPIRITUAL" | "WORLDLY"> {
+  try {
+    const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (savedKey && savedKey.startsWith("gsk_")) {
+      headers["x-groq-key"] = savedKey;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch("/api/groq/chat", {
+      method: "POST",
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: "openai/gpt-oss-20b",
+        messages: [
+          {
+            role: "system",
+            content: "You are an intent router for a Neem Karoli Baba spiritual AI sanctuary. Classify whether the user query is SPIRITUAL or WORLDLY.\n\n- SPIRITUAL: queries about inner peace, devotion, prayer, meditation, love, sadness, worry, moral guidance, God, faith, saints, temples, sacred texts, or stories of Neem Karoli Baba.\n- WORLDLY: questions about secular politicians, elections, government, history, mundane trivia, science, weather, coding, math, financial speculation, stocks, sports, movies, or celebrity gossip.\n\nReply with ONLY ONE WORD: either SPIRITUAL or WORLDLY."
+          },
+          {
+            role: "user",
+            content: userQuery
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 80,
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const rawText = (data.choices?.[0]?.message?.content || "").trim().toUpperCase();
+      const lastWorldly = rawText.lastIndexOf("WORLDLY");
+      const lastSpiritual = rawText.lastIndexOf("SPIRITUAL");
+
+      if (lastWorldly !== -1 && (lastSpiritual === -1 || lastWorldly > lastSpiritual)) {
+        return "WORLDLY";
+      }
+      return "SPIRITUAL";
+    }
+  } catch (err) {
+    console.warn("[Semantic Router] Groq classification skipped due to network/timeout:", err);
+  }
+
+  // Default to SPIRITUAL so legitimate devotees are never blocked if classifier fails
+  return "SPIRITUAL";
 }
 
 async function computeMaharajjiReply(userQuery: string, lang: Lang, history: Message[] = []): Promise<string> {
@@ -315,11 +374,26 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang, history: Mes
   const isTamil = effectiveLang === "ta";
   const isHindi = effectiveLang === "hi";
 
-  // 0. Zero-Token Guardrails: Intercept political, technical, spam, or worldly queries in the user's selected language
+  // 0. Zero-Token Guardrails: Intercept political, technical, spam, or worldly queries in local memory (0 tokens)
   const guard = checkGuardrails(userQuery, effectiveLang);
   if (guard.blocked && guard.reply) {
-    console.log(`[Guardrails] Intercepted query (${guard.category}) in language '${effectiveLang}' without burning tokens`);
+    console.log(`[Guardrails Tier 1] Intercepted query (${guard.category}) in language '${effectiveLang}' without burning tokens`);
     return guard.reply;
+  }
+
+  // Fast-Path: Is this query explicitly spiritual or devotional?
+  const isDirectlySpiritual = isExplicitlySpiritual(userQuery);
+
+  // Tier 2: If query is NOT obviously spiritual, check semantic intent with Groq before Voyage RAG
+  if (!isDirectlySpiritual) {
+    const intent = await classifyIntentWithGroq(userQuery);
+    if (intent === "WORLDLY") {
+      console.log(`[Semantic Router Tier 2] Query "${userQuery}" classified as WORLDLY by Groq. Skipping Voyage RAG, 0 Voyage tokens burned!`);
+      return getCannedDeflectionForQuery(userQuery, effectiveLang);
+    }
+    console.log(`[Semantic Router Tier 2] Query "${userQuery}" classified as SPIRITUAL. Proceeding to Voyage RAG.`);
+  } else {
+    console.log(`[Semantic Router Tier 1 Fast-Path] Query "${userQuery}" identified as explicitly spiritual. Proceeding to Voyage RAG.`);
   }
 
   // 1. Live RAG Pipeline (Voyage AI voyage-4-large + rerank-3) + Groq Multi-Key Fallback Proxy
