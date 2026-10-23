@@ -31,12 +31,46 @@ function WaveBars() {
   );
 }
 
+function formatIntoParagraphs(text: string): string[] {
+  if (!text) return [];
+  // If text already has double newlines
+  if (text.includes("\n\n")) {
+    return text.split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p.length > 0);
+  }
+  // If text has single newlines
+  if (text.includes("\n")) {
+    const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    if (lines.length > 1) return lines;
+  }
+  // If text is a long unsegmented wall of text (> 280 chars), split intelligently by sentences
+  if (text.length > 280) {
+    const sentences = text.match(/[^.!?]+[.!?]+(\s+|$)/g) || [text];
+    const paragraphs: string[] = [];
+    let current = "";
+    let count = 0;
+    for (const s of sentences) {
+      current += s;
+      count++;
+      if (count >= 2 && current.length >= 220) {
+        paragraphs.push(current.trim());
+        current = "";
+        count = 0;
+      }
+    }
+    if (current.trim().length > 0) {
+      paragraphs.push(current.trim());
+    }
+    return paragraphs.length > 0 ? paragraphs : [text];
+  }
+  return [text];
+}
+
 function renderFormattedText(text: string) {
-  const lines = text.split("\n");
-  return lines.map((line, lineIdx) => {
-    const parts = line.split(/(\*\*.*?\*\*)/g);
+  const paragraphs = formatIntoParagraphs(text);
+  return paragraphs.map((para, paraIdx) => {
+    const parts = para.split(/(\*\*.*?\*\*)/g);
     return (
-      <span key={lineIdx} className="block">
+      <p key={paraIdx} className="mb-3.5 last:mb-0 leading-[1.85] text-foreground">
         {parts.map((part, i) => {
           if (part.startsWith("**") && part.endsWith("**")) {
             return (
@@ -47,7 +81,7 @@ function renderFormattedText(text: string) {
           }
           return part;
         })}
-      </span>
+      </p>
     );
   });
 }

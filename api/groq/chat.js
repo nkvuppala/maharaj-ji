@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   const messages = body.messages || [];
   const stream = !!body.stream;
   const temperature = body.temperature !== undefined ? body.temperature : 0.9;
-  const max_tokens = body.max_tokens || 1500;
+  const max_tokens = body.max_tokens || 1800;
 
   // Zero-Token Guardrail Check
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');

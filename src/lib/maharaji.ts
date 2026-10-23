@@ -363,7 +363,7 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
           { role: "user", content: userQuery },
         ],
         temperature: 0.85,
-        max_tokens: 800,
+        max_tokens: 1800,
       }),
     });
 

@@ -152,7 +152,7 @@ export default function voyageProxyPlugin() {
         const messages = body.messages || [];
         const stream = !!body.stream;
         const temperature = body.temperature !== undefined ? body.temperature : 0.9;
-        const max_tokens = body.max_tokens || 1500;
+        const max_tokens = body.max_tokens || 1800;
 
         // Zero-Token Guardrail Check: Intercept worldly/technical/political queries at proxy
         const lastUser = [...messages].reverse().find(m => m.role === 'user');
