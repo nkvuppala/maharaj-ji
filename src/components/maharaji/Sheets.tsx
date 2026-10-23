@@ -1135,177 +1135,160 @@ export function SoundModal({
   volume: number;
   onVolumeChange: (vol: number) => void;
 }) {
+  const currentMeta = AMBIENT_SOUND_OPTIONS.find((s) => s.id === selectedSound);
+
   return (
     <Overlay open={open} onClose={onClose}>
-      <div className="flex flex-col gap-5">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-marigold/30 pb-3">
-          <div className="flex items-center gap-2.5">
-            <span className="halo flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-primary">
-              <Bell className="h-5 w-5" />
-            </span>
-            <div>
-              <h2 className="font-display text-lg font-semibold text-foreground-deep">
-                Ashram Soundscapes (आश्रम नाद)
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Sacred meditative sounds synthesized with pure Web Audio
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close sound modal"
-            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+      {/* 1. Standard Pinned Header */}
+      <SheetHeader
+        title="Ashram Soundscapes (आश्रम नाद)"
+        subtitle="Pure Web Audio • Zero external downloads • Infinite sacred loop"
+        onClose={onClose}
+      />
 
-        {/* Master Power Switch Card */}
-        <div className="flex items-center justify-between rounded-2xl bg-secondary/70 p-4 border border-marigold/40">
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-colors ${
+      {/* 2. Pinned Top Control Strip: Master Power and Volume */}
+      <div className="shrink-0 border-b border-marigold/20 bg-secondary/70 backdrop-blur-md px-4 sm:px-6 py-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          {/* Master Ambient Status and Power Toggle */}
+          <div className="flex items-center justify-between sm:justify-start gap-2.5">
+            <button
+              onClick={onToggleAmbient}
+              className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-xs ${
                 ambientOn
-                  ? "bg-gradient-to-br from-saffron to-terracotta text-white shadow-md shadow-saffron/30"
-                  : "bg-walnut/10 text-walnut/50"
+                  ? "bg-gradient-to-r from-saffron to-terracotta text-white shadow-saffron/25 scale-[1.02]"
+                  : "bg-secondary text-walnut border border-marigold/40 hover:bg-amber-glow"
               }`}
             >
-              {ambientOn ? <Waves className="h-6 w-6 animate-pulse" /> : <VolumeX className="h-6 w-6" />}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-display text-sm font-semibold text-foreground">
-                  Ambient Audio: {ambientOn ? "Active" : "Silent"}
-                </span>
-                {ambientOn && (
-                  <span className="inline-flex items-center rounded-full bg-saffron/15 px-2 py-0.5 text-[10px] font-bold text-saffron uppercase">
-                    Playing
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {ambientOn
-                  ? `Vibrating with ${AMBIENT_SOUND_OPTIONS.find((s) => s.id === selectedSound)?.name}`
-                  : "Tap turn on to immerse your room in peaceful ashram vibrations"}
-              </p>
-            </div>
+              {ambientOn ? (
+                <>
+                  <Waves className="h-3.5 w-3.5 animate-pulse" />
+                  <span>Ambient: Playing</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-3.5 w-3.5 text-walnut/60" />
+                  <span>Ambient: Muted</span>
+                </>
+              )}
+            </button>
+
+            {ambientOn && (
+              <span className="text-[11px] font-semibold text-primary truncate max-w-[190px]">
+                ✨ {currentMeta?.hindiName || currentMeta?.name}
+              </span>
+            )}
           </div>
 
-          <button
-            onClick={onToggleAmbient}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition-all shadow-sm ${
-              ambientOn
-                ? "bg-amber-glow text-walnut border border-marigold/60 hover:bg-amber-glow/80"
-                : "bg-gradient-to-r from-saffron to-terracotta text-white hover:brightness-105 hover:scale-105"
-            }`}
-          >
-            {ambientOn ? "Mute Silence" : "Turn On"}
-          </button>
-        </div>
-
-        {/* Volume Slider Card */}
-        <div className="rounded-2xl bg-secondary/40 p-3.5 border border-marigold/20">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-              <Volume2 className="h-4 w-4 text-primary" /> Volume Level
-            </span>
-            <span className="text-xs font-bold text-primary">
+          {/* Volume Control */}
+          <div className="flex items-center gap-2 bg-card/80 border border-marigold/30 rounded-full px-3 py-1 shadow-xs">
+            <Volume2 className="h-3.5 w-3.5 text-primary shrink-0" />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+              className="w-24 sm:w-28 accent-saffron cursor-pointer h-1.5"
+              aria-label="Volume level"
+            />
+            <span className="text-[11px] font-bold text-walnut/80 tabular-nums w-8 text-right shrink-0">
               {Math.round(volume * 100)}%
             </span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-            className="w-full accent-saffron cursor-pointer"
-            aria-label="Ambient volume"
-          />
+        </div>
+      </div>
+
+      {/* 3. Smooth Scrollable Sound Selection Grid */}
+      <div className="overflow-y-auto p-4 sm:p-6 space-y-2.5 max-h-[52vh] sm:max-h-[56vh] pr-2">
+        <div className="flex items-center justify-between px-1 mb-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Select Meditative Vibration
+          </span>
+          <span className="text-[10px] text-muted-foreground/80 hidden sm:inline">
+            Tap any card to play immediately
+          </span>
         </div>
 
-        {/* Sound Selection Grid */}
-        <div>
-          <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
-              Select Soundscape
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              Instant offline synthesis
-            </span>
-          </div>
+        {AMBIENT_SOUND_OPTIONS.map((opt) => {
+          const active = selectedSound === opt.id;
+          const isPlayingThis = active && ambientOn;
 
-          <div className="flex flex-col gap-2.5">
-            {AMBIENT_SOUND_OPTIONS.map((opt) => {
-              const active = selectedSound === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => {
-                    onSelectSound(opt.id);
-                    if (!ambientOn) onToggleAmbient();
-                  }}
-                  className={`flex items-start justify-between rounded-2xl p-3.5 text-left transition-all border ${
-                    active
-                      ? "bg-amber-glow/60 border-marigold shadow-md scale-[1.01]"
-                      : "bg-card border-marigold/20 hover:bg-secondary/60 hover:border-marigold/40"
+          return (
+            <button
+              key={opt.id}
+              onClick={() => {
+                onSelectSound(opt.id);
+                if (!ambientOn) onToggleAmbient();
+              }}
+              className={`group w-full flex items-center justify-between rounded-2xl p-3 sm:p-3.5 text-left transition-all border ${
+                isPlayingThis
+                  ? "bg-gradient-to-r from-amber-glow/90 to-amber-glow/40 border-marigold shadow-md ring-2 ring-saffron/30 scale-[1.01]"
+                  : active
+                  ? "bg-secondary/90 border-marigold/60 shadow-xs"
+                  : "bg-card/90 border-marigold/20 hover:bg-secondary/70 hover:border-marigold/40 hover:shadow-xs"
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0 pr-2">
+                <span
+                  className={`halo flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl transition-all ${
+                    isPlayingThis
+                      ? "bg-gradient-to-br from-saffron to-terracotta text-white shadow-md shadow-saffron/30"
+                      : "bg-secondary text-primary border border-marigold/30 group-hover:scale-105"
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                        active
-                          ? "bg-gradient-to-br from-saffron to-terracotta text-white shadow-sm"
-                          : "bg-secondary text-primary"
-                      }`}
-                    >
-                      {opt.id === "tanpura" && <Music className="h-4 w-4" />}
-                      {opt.id === "om" && <OmIcon className="h-4 w-4" />}
-                      {opt.id === "bells" && <Bell className="h-4 w-4" />}
-                      {opt.id === "river" && <Waves className="h-4 w-4" />}
-                      {opt.id === "aarti" && <Flame className="h-4 w-4" />}
+                  {opt.id === "tanpura" && <Music className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  {opt.id === "om" && <OmIcon className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  {opt.id === "bells" && <Bell className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  {opt.id === "river" && <Waves className="h-4 w-4 sm:h-5 sm:w-5" />}
+                  {opt.id === "aarti" && <Flame className="h-4 w-4 sm:h-5 sm:w-5" />}
+                </span>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-display text-sm sm:text-base font-bold text-foreground-deep group-hover:text-primary transition-colors">
+                      {opt.name}
                     </span>
-
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-display text-sm font-bold text-foreground">
-                          {opt.name}
-                        </span>
-                        <span className="text-[11px] font-medium text-muted-foreground/80">
-                          ({opt.hindiName})
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                        {opt.desc}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-end gap-1.5 shrink-0 pl-2">
-                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-walnut/70 uppercase">
-                      {opt.badge}
+                    <span className="text-[11px] font-semibold text-primary/80">
+                      ({opt.hindiName})
                     </span>
-                    {active && ambientOn && (
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-saffron animate-pulse">
-                        <Check className="h-3.5 w-3.5" /> Playing
-                      </span>
-                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-snug line-clamp-2">
+                    {opt.desc}
+                  </p>
+                </div>
+              </div>
 
-        {/* Footer Spiritual Note */}
-        <div className="rounded-xl bg-secondary/30 p-3 text-center border border-marigold/20">
-          <p className="text-xs text-muted-foreground italic">
-            "Sub Ek. In holy silence or sacred sound, keep Ram in your heart." [Neem Karoli Baba] 🙏
-          </p>
-        </div>
+              <div className="flex flex-col items-end gap-1.5 shrink-0 pl-1">
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-bold text-walnut/70 uppercase border border-marigold/20">
+                  {opt.badge}
+                </span>
+
+                {isPlayingThis ? (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-saffron">
+                    <span className="flex h-3 items-end gap-[1.5px]">
+                      <span className="w-[2px] h-full bg-saffron rounded-full animate-bounce" />
+                      <span className="w-[2px] h-2/3 bg-saffron rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-[2px] h-full bg-saffron rounded-full animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                    Playing
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors">
+                    Play ▶
+                  </span>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. Pinned Footer Note */}
+      <div className="shrink-0 p-3 bg-secondary/40 text-center border-t border-marigold/20">
+        <p className="text-xs text-muted-foreground italic">
+          "Sub Ek. In holy silence or sacred sound, keep Ram in your heart." [Neem Karoli Baba] 🙏
+        </p>
       </div>
     </Overlay>
   );
