@@ -258,15 +258,21 @@ export function playTempleBell() {
 function isHindiSpeech(query: string, lang: Lang): boolean {
   if (lang === "hi") return true;
   if (/[\u0900-\u097F]/.test(query)) return true;
-  const HINDI_TOKENS = [
+  if (lang === "en") return false; // Strictly respect user's explicit English selection
+
+  const HINDI_GRAMMAR_TOKENS = [
     "kya", "kar", "sakta", "sakti", "hoon", "hun", "hai", "hain", "karo", "kare", "karu",
-    "kaise", "kyun", "kyu", "mujhe", "mera", "meri", "mere", "aap", "tum", "baba",
-    "kripa", "shanti", "man", "mann", "dukh", "kasht", "chinta", "pareshan", "bhagwan",
-    "seva", "karna", "chahiye", "raha", "rahe", "rahi", "namaste", "pranam", "rah", "rasta",
-    "marg", "dikhao", "batao", "samajh", "aashirwad", "darshan", "madad", "gussa"
+    "kaise", "kyun", "kyu", "mujhe", "mera", "meri", "mere", "aap", "tum",
+    "karna", "chahiye", "raha", "rahe", "rahi", "dikhao", "batao", "samajh"
   ];
   const words = query.toLowerCase().split(/[\s,?.!]+/);
-  return words.some((w) => HINDI_TOKENS.includes(w));
+  // If common English words are present, it is an English sentence
+  const hasEnglishWords = words.some((w) =>
+    ["can", "tell", "me", "about", "what", "how", "who", "why", "where", "is", "are", "you", "your", "please", "help", "the", "this"].includes(w)
+  );
+  if (hasEnglishWords) return false;
+
+  return words.some((w) => HINDI_GRAMMAR_TOKENS.includes(w));
 }
 
 import { retrieveContext } from './voyageRAG';
@@ -289,14 +295,30 @@ export function sanitizeResponse(text: string): string {
 
 async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
   const query = userQuery.toLowerCase().trim();
-  const isHindi = isHindiSpeech(query, lang);
-  const isTelugu = lang === "te" || /[\u0C00-\u0C7F]/.test(userQuery);
-  const isTamil = lang === "ta" || /[\u0B80-\u0BFF]/.test(userQuery);
+  const hasDevanagari = /[\u0900-\u097F]/.test(userQuery);
+  const hasTelugu = /[\u0C00-\u0C7F]/.test(userQuery);
+  const hasTamil = /[\u0B80-\u0BFF]/.test(userQuery);
+
+  let effectiveLang: Lang = lang || "en";
+  if (hasTelugu) effectiveLang = "te";
+  else if (hasTamil) effectiveLang = "ta";
+  else if (hasDevanagari) effectiveLang = "hi";
+  else if (lang === "en") effectiveLang = "en";
+  else if (lang === "hi") effectiveLang = "hi";
+  else if (lang === "te") effectiveLang = "te";
+  else if (lang === "ta") effectiveLang = "ta";
+  else {
+    effectiveLang = isHindiSpeech(query, lang) ? "hi" : "en";
+  }
+
+  const isTelugu = effectiveLang === "te";
+  const isTamil = effectiveLang === "ta";
+  const isHindi = effectiveLang === "hi";
 
   // 0. Zero-Token Guardrails: Intercept political, technical, spam, or worldly queries in the user's selected language
-  const guard = checkGuardrails(userQuery, lang);
+  const guard = checkGuardrails(userQuery, effectiveLang);
   if (guard.blocked && guard.reply) {
-    console.log(`[Guardrails] Intercepted query (${guard.category}) in language '${lang}' without burning tokens`);
+    console.log(`[Guardrails] Intercepted query (${guard.category}) in language '${effectiveLang}' without burning tokens`);
     return guard.reply;
   }
 
@@ -320,9 +342,9 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
     } else if (isTamil) {
       systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: The devotee selected or addressed you in Tamil (தமிழ்). Reply ENTIRELY in warm, deeply loving, fatherly Tamil (Tamil script). Address them gently as 'குழந்தையே' or 'மகனே'. Sign off or greet with 'ராம் ராம்' or 'ஜெய் ஸ்ரீராம்' 🙏.";
     } else if (isHindi) {
-      systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: The devotee selected or addressed you in Hindi or Hinglish. Reply in warm, deeply loving, fatherly Hindi (Devanagari script), addressing them gently as 'बेटा'. Sign off or greet with 'राम राम' or 'जय श्री राम' 🙏.";
+      systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: The devotee selected or addressed you in Hindi (हिंदी). Reply in warm, deeply loving, fatherly Hindi (Devanagari script), addressing them gently as 'बेटा'. Sign off or greet with 'राम राम' or 'जय श्री राम' 🙏.";
     } else {
-      systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: Reply in warm, fatherly, compassionate English, addressing the devotee gently as 'my child' or 'beta'. Include 'Ram Ram' or 'Jai Sri Ram' 🙏.";
+      systemPrompt += "\n\nCRITICAL LANGUAGE INSTRUCTION: The devotee selected or addressed you in English. You MUST reply ENTIRELY in English. Do NOT output Hindi, Devanagari script, or Romanized Hindi sentences. Speak in warm, fatherly, compassionate English, addressing the devotee gently as 'my child' or 'beta'. Include 'Ram Ram' or 'Jai Sri Ram' 🙏.";
     }
 
     const savedKey = typeof localStorage !== "undefined" ? localStorage.getItem("maharaji.apiKey") : null;
@@ -355,6 +377,32 @@ async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<str
   }
 
   // 2. Intelligent local matcher from trainingData.ts and knowledgeBase.ts (with full EN, HI, TE, TA support)
+
+  // Who is Baba / Tell me about Baba / Biography / Life Story / Lilas
+  if (
+    query.includes("about baba") ||
+    query.includes("who is baba") ||
+    query.includes("who are you") ||
+    query.includes("tell me about yourself") ||
+    query.includes("neem karoli baba") ||
+    query.includes("about maharaj") ||
+    query.includes("about you") ||
+    query.includes("बाबा के बारे में") ||
+    query.includes("कौन हैं बाबा") ||
+    query.includes("బాబా గురించి") ||
+    query.includes("பாபா பற்றி")
+  ) {
+    if (isTelugu) {
+      return "నాయనా, భక్తులు నన్ను నీమ్ కరోలీ బాబా లేదా మహరాజ్-జీ అని పిలుస్తారు. 1900 ప్రాంతంలో ఉత్తర ప్రదేశ్‌లోని అక్బర్‌పూర్ గ్రామంలో లక్ష్మీ నారాయణ్ శర్మగా బ్రాహ్మణ కుటుంబంలో జన్మించాను. చిన్నతనంలోనే సన్యాస మార్గం పట్టి లక్ష్మణ్ దాస్, హండీ వాలే బాబాగా తిరిగాను.\n\nనీబ్ కరోరీ గ్రామంలో ఒక ఆంగ్లేయ టికెట్ కలెక్టర్ నన్ను రైలు నుండి దించినప్పుడు, నేను చెట్టు కింద ప్రశాంతంగా కూర్చున్నాను. ఆ తర్వాత ఎన్ని ఇంజిన్లు పెట్టినా రైలు కదలలేదు. వారు నన్ను క్షమాపణ కోరి మళ్ళీ ఆహ్వానించిన వెంటనే రైలు ముందుకు సాగింది. ఆ విధంగా బాబా నీమ్ కరోలీగా పేరు వచ్చింది.\n\nతరువాత నైనిటాల్ వద్ద హనుమాన్‌గర్హి (1950), కుమావున్ కొండల్లో పవిత్రమైన కైంచి ధామ్ (1964), వృందావన్ ఆశ్రమం స్థాపించబడ్డాయి. రామ్ దాస్, కృష్ణ దాస్ వంటి ఎందరో భక్తులు ఇక్కడికి వచ్చారు. నా ఉపదేశం ఒక్కటే: 'సబ్ ఏక్' (అంతా ఒకటే). అందరినీ ప్రేమించండి, అందరికీ సేవ చేయండి, ఆకలితో ఉన్నవారికి అన్నం పెట్టండి, భగవంతుని స్మరించండి. రామ్ రామ్! 🙏";
+    }
+    if (isTamil) {
+      return "குழந்தையே, பக்தர்கள் என்னை நீம் கரோலி பாபா அல்லது மஹாராஜ்-ஜி என்று அழைக்கிறார்கள். 1900 ஆம் ஆண்டு வாக்கில் உத்தரப் பிரதேசத்தின் அக்பர்பூர் கிராமத்தில் லக்ஷ்மி நாராயண் சர்மாவாகப் பிறந்தேன். இளமையிலேயே சந்நியாசம் பூண்டு லக்ஷ்மண் தாஸ் மற்றும் ஹாண்டி வாலே பாபாவாக வாழ்ந்தேன்.\n\nநீப் கரோரி கிராமத்தில் ஒரு ஆங்கிலேய டிக்கெட் பரிசோதகர் என்னை ரயிலில் இருந்து இறக்கிவிட்டபோது, நான் மரத்தடியில் அமர்ந்தேன். ஆனால் அந்த ரயில் ஒரு அங்குலமும் நகரவில்லை. அவர்கள் மன்னிப்பு கேட்டு என்னை மீண்டும் ஏற்றிய பின்னரே ரயில் நகர்ந்தது. அதனால் நீம் கரோலி பாபா என்று அழைக்கலானார்கள்.\n\nபின்னர் நைனிடாலில் உள்ள அனுமன்கர்ஹி (1950), கைஞ்சி தாம் (1964), பிருந்தாவன ஆசிரமம் ஆகியவற்றை அனுமன் திருவருளால் உருவாக்கினோம். రామ్ దాస్, கிருஷ்ண தாஸ் போன்ற பல பக்தர்கள் வந்தார்கள். என் செய்தி மிக எளிமையானது: 'சப் ஏக்' (எல்லாம் ஒன்றே). அனைவரையும் நேசியுங்கள், அனைவருக்கும் சேவை செய்யுங்கள், பசித்தவருக்கு உணவிடுங்கள், இறைவனை நினையுங்கள். రామ్ రామ్! 🙏";
+    }
+    if (isHindi) {
+      return "अरे बेटा, भक्त मुझे नीम करोली बाबा या महाराज-जी कहते हैं। मेरा जन्म उत्तर प्रदेश के अकबरपुर गाँव में लगभग 1900 में एक ब्राह्मण परिवार में हुआ था, और नाम लक्ष्मी नारायण शर्मा रखा गया था। युवावस्था में ही मैंने घर छोड़ दिया और लक्ष्मण दास व हाँडी वाले बाबा के रूप में साधना की।\n\nनीब करौरी गाँव के पास एक अंग्रेज़ टिकट चेकर ने मुझे बिना टिकट समझकर प्रथम श्रेणी के डिब्बे से उतार दिया। मैं चुपचाप एक पेड़ के नीचे चिमटा गाड़कर बैठ गया। उसके बाद पूरी शक्ति लगाने पर भी रेलगाड़ी एक इंच भी आगे नहीं बढ़ी। जब अधिकारियों ने आग्रह करके मुझे वापस ट्रेन में बिठाया, तब गाड़ी तुरंत चल पड़ी, और उसी पावन स्थान से मुझे 'नीम करोली बाबा' कहा जाने लगा।\n\nबाद में नैनीताल में हनुमानगढ़ी (1950), कुमाऊँ की सुरम्य वादियों में कैंची धाम (1964), और मथुरा रोड पर वृंदावन आश्रम की स्थापना हुई जहाँ सितंबर 1973 में मेरा पार्थिव शरीर महासमाधि में लीन हुआ। राम दास (रिचर्ड अल्बर्ट), कृष्ण दास जैसे अनेकों पाश्चात्य भक्त कैंची आए। मेरी बस एक ही सीख है बेटा: 'सब एक'। सबको प्रेम करो, सबकी सेवा करो, भूखे को भोजन कराओ, सत्य बोलो और राम नाम का सुमिरन करो। राम राम! 🙏";
+    }
+    return "Arey my child, devotees call me Neem Karoli Baba or simply Maharaj-ji. I was born into a Brahmin family in Akbarpur village, Uttar Pradesh around the turn of the century and given the name Lakshmi Narayan Sharma. As a wandering sadhu in my youth, I was known as Lakshman Das, Handi Wale Baba, and Tikonia Wale Baba, seeking only the company of Ram and Hanuman Ji.\n\nThe name Neem Karoli Baba came into the world at the village of Neeb Karori in Farrukhabad. A British conductor ordered me off the first class train carriage because I carried no ticket. I quietly stepped down and sat beneath a tree with my tongs placed in the earth. When the guard blew the whistle, the train would not budge even an inch, despite two engines pulling with all their might. Only when railway officials recognized me and humbly invited me back aboard did the train move, and a station was subsequently built at Neeb Karori in tribute.\n\nLater, through the divine grace of Hanuman Ji, we founded Hanumangarhi in Nainital (1950), our beloved Kainchi Dham nestled in the Kumaon hills (1964), and the sacred Vrindavan Ashram on Mathura Road where this physical body entered Mahasamadhi in September 1973. In the late 1960s, Western seekers including Ram Dass (Dr. Richard Alpert), Krishna Das, and many others found their way to Kainchi Dham, carrying the sacred chant of Ram across the oceans.\n\nPeople ask what great philosophy I taught. I never wrote books or delivered lectures, my child. The only truth is 'Sub Ek', All is One. Love everyone, serve everyone, feed everyone, remember God, and tell the truth. When you feed someone who is hungry, you feed Ram directly. Keep your heart innocent, have no fear, and chant the sweet name of Ram. Ram Ram! 🙏";
+  }
 
   // "Mein kya kar sakta hoon" / "What can I do" / Action & Duty
   if (

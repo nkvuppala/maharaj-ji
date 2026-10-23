@@ -38,19 +38,26 @@ let repeatCount = 0;
  * Resolves the effective language from user preference and query content
  */
 export function resolveLanguage(userQuery: string, preferredLang: SupportedLang = 'en'): SupportedLang {
-  // If user selected Telugu or Tamil explicitly, or query has their Unicode script
-  if (preferredLang === 'te' || /[\u0C00-\u0C7F]/.test(userQuery)) return 'te';
-  if (preferredLang === 'ta' || /[\u0B80-\u0BFF]/.test(userQuery)) return 'ta';
+  // If query contains native Indic scripts, assign immediately
+  if (/[\u0C00-\u0C7F]/.test(userQuery)) return 'te';
+  if (/[\u0B80-\u0BFF]/.test(userQuery)) return 'ta';
+  if (/[\u0900-\u097F]/.test(userQuery)) return 'hi';
 
-  // If user selected Hindi or query has Devanagari or common Hinglish
-  if (preferredLang === 'hi' || /[\u0900-\u097F]/.test(userQuery)) return 'hi';
-  const hindiWords = [
+  // If user explicitly selected a language, respect their choice
+  if (preferredLang === 'en') return 'en';
+  if (preferredLang === 'hi') return 'hi';
+  if (preferredLang === 'te') return 'te';
+  if (preferredLang === 'ta') return 'ta';
+
+  const hindiGrammarWords = [
     'kya', 'kaise', 'kyun', 'kyu', 'kaun', 'kon', 'batao', 'dikhao', 'hai', 'hain',
-    'mera', 'meri', 'mere', 'mujhe', 'hum', 'tum', 'aap', 'kripa', 'pranam', 'namaste',
-    'baba', 'maharaj', 'karo', 'kare', 'raha', 'rahe', 'rahi', 'shanti', 'kasht', 'dukh'
+    'mera', 'meri', 'mere', 'mujhe', 'hum', 'tum', 'aap', 'karo', 'kare', 'raha', 'rahe', 'rahi'
   ];
   const tokens = userQuery.toLowerCase().split(/[\s,?.!]+/);
-  if (tokens.some((t) => hindiWords.includes(t))) return 'hi';
+  const hasEnglishWords = tokens.some((t) =>
+    ['can', 'tell', 'me', 'about', 'what', 'how', 'who', 'why', 'where', 'is', 'are', 'you'].includes(t)
+  );
+  if (!hasEnglishWords && tokens.some((t) => hindiGrammarWords.includes(t))) return 'hi';
 
   return preferredLang;
 }
