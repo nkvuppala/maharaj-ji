@@ -146,7 +146,7 @@ export default function voyageProxyPlugin() {
         const isAbuse = /\b(fuck|bitch|bastard|asshole|idiot|madarchod|behenchod|bhosdike|chutiya|fraud\s*baba)\b/i.test(userText);
 
         if (isPolitics || isTech || isCodingMath || isFinance || isSportsGossip || isTrivia || isAbuse) {
-          console.log(`🛡️ [Proxy Zero-Token Guardrail] Intercepted "${userText.slice(0, 45)}" — 0 tokens burned!`);
+          console.log(`🛡️ [Proxy Zero-Token Guardrail] Intercepted "${userText.slice(0, 45)}", 0 tokens burned!`);
           let deflection = '';
           if (isPolitics) {
             deflection = isHindi
@@ -158,7 +158,7 @@ export default function voyageProxyPlugin() {
               : "Beta, what does an old sadhu under a blanket know of machines, wires, and worldly contraptions? I only know Ram and my Hanuman Ji. Step out of these mental perplexities. Chant the Hanuman Chalisa with love, serve those who have nothing, and keep your heart pure. Sub Ek! Ram Ram! 🙏";
           } else if (isFinance) {
             deflection = isHindi
-              ? "बेटा, यह धन-दौलत और बाजार तो सुबह के कोहरे की तरह हैं—आज दिखते हैं, कल उड़ जाते हैं। असली खजाना तो प्रभु का नाम और निष्काम सेवा है। लोभ छोड़ो, संतोष रखो और राम नाम में मगन रहो। राम राम! 🙏"
+              ? "बेटा, यह धन-दौलत और बाजार तो सुबह के कोहरे की तरह हैं, आज दिखते हैं, कल उड़ जाते हैं। असली खजाना तो प्रभु का नाम और निष्काम सेवा है। लोभ छोड़ो, संतोष रखो और राम नाम में मगन रहो। राम राम! 🙏"
               : "Beta, worldly wealth and markets vanish like morning mist. The only imperishable treasure is Ram Naam and selfless service. Let go of greed and anxiety; keep your life simple and remember God. Ram Ram! 🙏";
           } else if (isAbuse) {
             deflection = isHindi
@@ -253,6 +253,14 @@ export default function voyageProxyPlugin() {
               return;
             } else {
               const data = await groqRes.json();
+              if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                data.choices[0].message.content = data.choices[0].message.content
+                  .replace(/[\u2014\u2013\u2015]/g, ', ')
+                  .replace(/--+/g, ', ')
+                  .replace(/,\s*,/g, ',')
+                  .replace(/\s{2,}/g, ' ')
+                  .trim();
+              }
               res.writeHead(200, {
                 'Content-Type': 'application/json',
                 'X-Groq-Active-Key': String(i + 1),

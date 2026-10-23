@@ -273,7 +273,21 @@ import { retrieveContext } from './voyageRAG';
 import { getSystemPromptWithContext } from './systemPrompt';
 import { checkGuardrails, getUniversalFallback } from './guardrails';
 
-export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
+/**
+ * Programmatic sanitizer that completely removes any em dash, en dash,
+ * or double hyphen from any Maharaj-ji response before it reaches the user.
+ */
+export function sanitizeResponse(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/[\u2014\u2013\u2015]/g, ", ")
+    .replace(/--+/g, ", ")
+    .replace(/,\s*,/g, ",")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+async function computeMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
   const query = userQuery.toLowerCase().trim();
   const isHindi = isHindiSpeech(query, lang);
   const isTelugu = lang === "te" || /[\u0C00-\u0C7F]/.test(userQuery);
@@ -487,4 +501,13 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
 
   // 3. Fallbacks by language
   return getUniversalFallback(lang);
+}
+
+/**
+ * Public API for obtaining Maharaj-ji's response.
+ * Passes all output through sanitizeResponse to guarantee zero em dashes, en dashes, or double hyphens.
+ */
+export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
+  const reply = await computeMaharajjiReply(userQuery, lang);
+  return sanitizeResponse(reply);
 }

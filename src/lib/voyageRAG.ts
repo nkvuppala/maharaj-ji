@@ -47,7 +47,7 @@ let loadPromise: Promise<EmbeddingsData | null> | null = null;
 
 /**
  * Load pre-computed embeddings from data/embeddings.json
- * Cached after first load — only fetched once per session
+ * Cached after first load, only fetched once per session
  */
 async function loadEmbeddings(): Promise<EmbeddingsData | null> {
   if (cachedEmbeddings) return cachedEmbeddings;
@@ -57,7 +57,7 @@ async function loadEmbeddings(): Promise<EmbeddingsData | null> {
     try {
       const res = await fetch('/data/embeddings.json');
       if (!res.ok) {
-        console.warn('[RAG] embeddings.json not found — RAG disabled. Run: node scripts/buildEmbeddings.js');
+        console.warn('[RAG] embeddings.json not found, RAG disabled. Run: node scripts/buildEmbeddings.js');
         return null;
       }
       cachedEmbeddings = await res.json();
@@ -168,7 +168,7 @@ export async function retrieveContext(userMessage: string): Promise<RAGResult | 
     return fallbackKeywordSearch(userMessage, embeddings);
   }
 
-  // Step 2: Cosine similarity — score all documents
+  // Step 2: Cosine similarity: score all documents
   const scored = embeddings.documents.map((doc, index) => ({
     index,
     score: cosineSimilarity(queryEmbedding, doc.embedding),
