@@ -42,7 +42,9 @@ function HeaderPill({
         {icon}
       </span>
       {children}
-      <span className="hidden xl:inline text-walnut whitespace-nowrap">{label}</span>
+      <span className="hidden sm:inline text-walnut font-medium text-[11px] sm:text-xs whitespace-nowrap">
+        {label}
+      </span>
     </button>
   );
 }
@@ -73,9 +75,7 @@ export default function Header({ ambientOn, onToggleAmbient, onOpen }: HeaderPro
 
       {/* Right: Quick access pills (scrollable on narrow mobile screens) */}
       <nav aria-label="Devotion tools" className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-[65%] sm:max-w-none">
-        <HeaderPill icon={<Flower2 className="h-4 w-4" />} label="Prasad" onClick={() => onOpen("prasad")}>
-          <span className="text-[11px] text-walnut font-medium hidden sm:inline">Prasad</span>
-        </HeaderPill>
+        <HeaderPill icon={<Flower2 className="h-4 w-4" />} label="Prasad" onClick={() => onOpen("prasad")} />
 
         <HeaderPill icon={<Bell className="h-4 w-4" />} label="Sound" onClick={() => onOpen("sound")} active={ambientOn}>
           {ambientOn && (
@@ -89,20 +89,13 @@ export default function Header({ ambientOn, onToggleAmbient, onOpen }: HeaderPro
               ))}
             </span>
           )}
-          <span className="text-[11px] text-walnut font-medium hidden sm:inline">Sound</span>
         </HeaderPill>
 
-        <HeaderPill icon={<JapaIcon className="h-4 w-4" />} label="Japa" onClick={() => onOpen("japa")}>
-          <span className="text-[11px] text-walnut font-medium hidden sm:inline">Japa</span>
-        </HeaderPill>
+        <HeaderPill icon={<JapaIcon className="h-4 w-4" />} label="Japa" onClick={() => onOpen("japa")} />
 
-        <HeaderPill icon={<MonitorPlay className="h-4 w-4" />} label="Media" onClick={() => onOpen("media")}>
-          <span className="text-[11px] text-walnut font-medium hidden sm:inline">Media</span>
-        </HeaderPill>
+        <HeaderPill icon={<MonitorPlay className="h-4 w-4" />} label="Media" onClick={() => onOpen("media")} />
 
-        <HeaderPill icon={<Settings className="h-4 w-4" />} label="Settings" onClick={() => onOpen("settings")}>
-          <span className="text-[11px] text-walnut font-medium hidden sm:inline">Settings</span>
-        </HeaderPill>
+        <HeaderPill icon={<Settings className="h-4 w-4" />} label="Settings" onClick={() => onOpen("settings")} />
       </nav>
     </header>
   );
