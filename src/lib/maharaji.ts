@@ -271,7 +271,7 @@ function isHindiSpeech(query: string, lang: Lang): boolean {
 
 import { retrieveContext } from './voyageRAG';
 import { getSystemPromptWithContext } from './systemPrompt';
-import { checkGuardrails } from './guardrails';
+import { checkGuardrails, getUniversalFallback } from './guardrails';
 
 export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<string> {
   const query = userQuery.toLowerCase().trim();
@@ -420,7 +420,7 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
 
   // 3. Fallbacks by language
   if (isHindi) {
-    return "सबको खिलाओ बेटा। सब प्राणियों से प्रेम करो, सत्य बोलो और भगवान का नाम सदा स्मरण रखो। जब तुम निस्वार्थ भाव से सेवा करते हो, तो बाबा तुम्हारे साथ हर पल रहता है। चिंता मत करो, सब ठीक होगा। 🙏";
+    return getUniversalFallback(true);
   }
   if (lang === "te") {
     return "బిడ్డా, మీ హృదయంలోని భారాన్ని భగవంతునికి సమర్పించండి. అందరినీ ప్రేమించండి, అందరికీ సేవ చేయండి, భగవంతుని స్మరించండి. అంతా మంగళమే జరుగుతుంది. 🙏";
@@ -429,5 +429,5 @@ export async function getMaharajjiReply(userQuery: string, lang: Lang): Promise<
     return "குழந்தையே, உங்கள் மனபாரத்தை இறைவனிடம் ஒப்படையுங்கள். அனைவரையும் நேசியுங்கள், சேவை செய்யுங்கள், இறைவனை நினையுங்கள். எல்லாம் நன்மையாகவே முடியும். 🙏";
   }
 
-  return "Feed someone today, my child. Love all beings, tell the truth, and keep God's name in your heart. When you give freely without asking for a reward, your path clears on its own. I am with you always. 🙏";
+  return getUniversalFallback(false);
 }

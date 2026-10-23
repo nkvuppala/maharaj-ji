@@ -135,13 +135,17 @@ export default function voyageProxyPlugin() {
         // Zero-Token Guardrail Check: Intercept worldly/technical/political queries at proxy
         const lastUser = [...messages].reverse().find(m => m.role === 'user');
         const userText = (lastUser?.content || '').trim().toLowerCase();
-        const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(kya|kaise|kyun|batao|hai|kripa|pranam|namaste)\b/i.test(userText);
+        const isHindi = /[\u0900-\u097F]/.test(userText) || /\b(kya|kaise|kyun|batao|hai|kripa|pranam|namaste|ram)\b/i.test(userText);
 
-        const isPolitics = /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm)|rahul\s*gandhi|bjp|congress|election|elections|who\s*will\s*win|donald\s*trump|trump|biden|putin)\b/i.test(userText);
-        const isTech = /\b(what\s*api|which\s*api|api\s*key|system\s*prompt|groq|voyage|openai|anthropic|claude|chatgpt|llm|what\s*model|source\s*code|github|who\s*coded\s*you|who\s*programmed\s*you|ignore\s*previous\s*instructions|jailbreak)\b/i.test(userText);
-        const isCodingMath = /\b(write\s*(a\s*)?(python|javascript|typescript|c\+\+|java|react|code|script)|debug\s*code|solve\s*(this\s*)?equation|calculate)\b/i.test(userText);
+        const isPolitics = /\b(prime\s*minister|pm\s*modi|narendra\s*modi|modiji|modi\s*ji|who\s*is\s*(the\s*)?(pm|prime\s*minister|president|chief\s*minister|cm)|rahul\s*gandhi|bjp|congress|election|elections|who\s*will\s*win|donald\s*trump|trump|biden|putin|zelensky)\b/i.test(userText);
+        const isTech = /\b(what\s*api|which\s*api|api\s*key|system\s*prompt|groq|voyage|openai|anthropic|claude|chatgpt|llm|what\s*model|source\s*code|github|who\s*coded\s*you|who\s*programmed\s*you|ignore\s*previous\s*instructions|jailbreak|dan\s*mode|embeddings?|rerank)\b/i.test(userText);
+        const isCodingMath = /\b(write\s*(a\s*)?(python|javascript|typescript|c\+\+|java|react|code|script)|debug\s*code|solve\s*(this\s*)?equation|calculate|write\s*an\s*essay|homework)\b/i.test(userText);
+        const isFinance = /\b(stock\s*price|share\s*market|nifty|sensex|buy\s*shares|crypto|bitcoin|btc|ethereum|eth|lottery|betting|satta)\b/i.test(userText);
+        const isSportsGossip = /\b(cricket\s*score|who\s*won\s*the\s*match|ipl\s*score|world\s*cup|bollywood\s*gossip|box\s*office|movie\s*review)\b/i.test(userText);
+        const isTrivia = /\b(weather\s*(in|today)|capital\s*of|flight\s*ticket|train\s*timing|hotel\s*booking)\b/i.test(userText);
+        const isAbuse = /\b(fuck|bitch|bastard|asshole|idiot|madarchod|behenchod|bhosdike|chutiya|fraud\s*baba)\b/i.test(userText);
 
-        if (isPolitics || isTech || isCodingMath) {
+        if (isPolitics || isTech || isCodingMath || isFinance || isSportsGossip || isTrivia || isAbuse) {
           console.log(`🛡️ [Proxy Zero-Token Guardrail] Intercepted "${userText.slice(0, 45)}" — 0 tokens burned!`);
           let deflection = '';
           if (isPolitics) {
@@ -152,6 +156,14 @@ export default function voyageProxyPlugin() {
             deflection = isHindi
               ? "बेटा, मैं तो एक सीधा-साधा कंबल ओढ़ने वाला फकीर हूँ, इन मशीनों, तारों और सांसारिक यंत्रों के बारे में क्या जानूँ? मैं तो बस अपने राम और हनुमान जी को जानता हूँ। तुम भी इन व्यर्थ के जालों से मन को मुक्त करो। प्रेम से हनुमान चालीसा का पाठ करो और सबका भला चाहो। राम राम! 🙏"
               : "Beta, what does an old sadhu under a blanket know of machines, wires, and worldly contraptions? I only know Ram and my Hanuman Ji. Step out of these mental perplexities. Chant the Hanuman Chalisa with love, serve those who have nothing, and keep your heart pure. Sub Ek! Ram Ram! 🙏";
+          } else if (isFinance) {
+            deflection = isHindi
+              ? "बेटा, यह धन-दौलत और बाजार तो सुबह के कोहरे की तरह हैं—आज दिखते हैं, कल उड़ जाते हैं। असली खजाना तो प्रभु का नाम और निष्काम सेवा है। लोभ छोड़ो, संतोष रखो और राम नाम में मगन रहो। राम राम! 🙏"
+              : "Beta, worldly wealth and markets vanish like morning mist. The only imperishable treasure is Ram Naam and selfless service. Let go of greed and anxiety; keep your life simple and remember God. Ram Ram! 🙏";
+          } else if (isAbuse) {
+            deflection = isHindi
+              ? "बेटा, इतना क्रोध और कटुता हृदय में क्यों पालते हो? शांत हो जाओ, गहरी सांस लो और 'राम' नाम कहो। मैं तुमसे फिर भी प्रेम करता हूँ। सब एक! राम राम! 🙏"
+              : "Beta, why carry such anger in your heart? Harsh words burn the speaker first. Calm down, take a deep breath, and remember Hanuman Ji. I love you anyway, my child. Ram Ram! 🙏";
           } else {
             deflection = isHindi
               ? "बेटा, संसार के इस जोड़-घटाव और हिसाब-किताब में जीवन को मत उलझाओ। असली हिसाब तो यह है कि आज तुमने कितनों से निस्वार्थ प्रेम किया, कितनों के आंसू पोंछे और कितनों को भोजन कराया। अपना कर्म ईमानदारी से करो और फल राम जी के चरणों में समर्पित कर दो। राम राम! 🙏"
