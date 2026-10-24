@@ -32,14 +32,18 @@ function loadEnv() {
         if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
           val = val.slice(1, -1);
         }
-        if (!process.env[key]) {
-          process.env[key] = val;
-        }
+        // Prioritize .env file values over stale system environment variables
+        process.env[key] = val;
       }
     }
   } catch (e) {
     console.warn('[server] Warning loading .env:', e.message);
   }
+}
+
+function getVoyageKey() {
+  loadEnv();
+  return process.env.VOYAGE_API_KEY ? process.env.VOYAGE_API_KEY.trim() : '';
 }
 
 loadEnv();
@@ -258,7 +262,7 @@ const server = http.createServer(async (req, res) => {
 
   // 3. POST /api/voyage/embed
   if (pathname === '/api/voyage/embed' && req.method === 'POST') {
-    const VOYAGE_API_KEY = process.env.VOYAGE_API_KEY;
+    const VOYAGE_API_KEY = getVoyageKey();
     if (!VOYAGE_API_KEY) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'Voyage API key not configured' }));
@@ -297,7 +301,7 @@ const server = http.createServer(async (req, res) => {
 
   // 4. POST /api/voyage/rerank
   if (pathname === '/api/voyage/rerank' && req.method === 'POST') {
-    const VOYAGE_API_KEY = process.env.VOYAGE_API_KEY;
+    const VOYAGE_API_KEY = getVoyageKey();
     if (!VOYAGE_API_KEY) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: 'Voyage API key not configured' }));
@@ -324,6 +328,13 @@ const server = http.createServer(async (req, res) => {
           truncation: true,
         }),
       });
+
+      if (!voyageRes.ok) {
+        const errText = await voyageRes.text();
+        console.error('[voyage rerank error]', voyageRes.status, errText);
+        res.writeHead(voyageRes.status, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ error: errText }));
+      }
 
       const data = await voyageRes.json();
       res.writeHead(200, { 'Content-Type': 'application/json' });
