@@ -103,15 +103,13 @@ export default function voyageProxyPlugin() {
     return process.env.VOYAGE_API_KEY;
   }
 
-  return {
-    name: 'api-proxy-plugin',
-    configureServer(server) {
-      const initialVoyage = getVoyageKey();
-      const initialGroq = getGroqKeys();
+  function attachMiddlewares(middlewares) {
+    const initialVoyage = getVoyageKey();
+    const initialGroq = getGroqKeys();
 
-      console.log('🔌 API proxy middleware loaded:');
-      console.log(`   • Voyage AI: ${initialVoyage ? 'Configured ✅' : 'Not configured ⚠️'}`);
-      console.log(`   • Groq API: ${initialGroq.length} key(s) loaded with auto-fallback ✅`);
+    console.log('🔌 API proxy middleware loaded:');
+    console.log(`   • Voyage AI: ${initialVoyage ? 'Configured ✅' : 'Not configured ⚠️'}`);
+    console.log(`   • Groq API: ${initialGroq.length} key(s) loaded with auto-fallback ✅`);
 
       // Helper to parse JSON body from incoming request
       function parseBody(req) {
@@ -128,7 +126,7 @@ export default function voyageProxyPlugin() {
       }
 
       // ─── GET /api/groq/status ──────────────────────────────────────────────
-      server.middlewares.use('/api/groq/status', (req, res, next) => {
+      middlewares.use('/api/groq/status', (req, res, next) => {
         if (req.method !== 'GET') return next();
         const keys = getGroqKeys();
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -139,7 +137,7 @@ export default function voyageProxyPlugin() {
       });
 
       // ─── POST /api/groq/chat (Multi-key fallback proxy) ───────────────────
-      server.middlewares.use('/api/groq/chat', async (req, res, next) => {
+      middlewares.use('/api/groq/chat', async (req, res, next) => {
         if (req.method !== 'POST') return next();
 
         let body;
@@ -321,7 +319,7 @@ export default function voyageProxyPlugin() {
       });
 
       // ─── POST /api/voyage/embed ───────────────────────────────────────────
-      server.middlewares.use('/api/voyage/embed', async (req, res, next) => {
+      middlewares.use('/api/voyage/embed', async (req, res, next) => {
         if (req.method !== 'POST') return next();
         const VOYAGE_API_KEY = getVoyageKey();
         if (!VOYAGE_API_KEY) {
@@ -376,7 +374,7 @@ export default function voyageProxyPlugin() {
       });
 
       // ─── POST /api/voyage/rerank ──────────────────────────────────────────
-      server.middlewares.use('/api/voyage/rerank', async (req, res, next) => {
+      middlewares.use('/api/voyage/rerank', async (req, res, next) => {
         if (req.method !== 'POST') return next();
         const VOYAGE_API_KEY = getVoyageKey();
         if (!VOYAGE_API_KEY) {
@@ -427,6 +425,15 @@ export default function voyageProxyPlugin() {
           res.end(JSON.stringify({ error: err.message }));
         }
       });
+  }
+
+  return {
+    name: 'api-proxy-plugin',
+    configureServer(server) {
+      attachMiddlewares(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      attachMiddlewares(server.middlewares);
     },
   };
 }
